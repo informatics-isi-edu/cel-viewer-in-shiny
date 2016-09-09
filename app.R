@@ -119,13 +119,15 @@ server <- function(input, output){
   source("www/old_util.R")
   source("www/util.R")
 
+  load("data/jaws3.R")
+  load("data/exprs.R")  
+
   age <- factor(rep(c(10.5, 11.5, 12.5, 13.5, 14.5), each = 12))
   bone <- factor(rep(rep(c("Max", "Mnd"), each = 6), 5))
   place <- relevel(factor(rep(rep(c("D", "P"), each = 3), 10)), "P")
   full.design <- model.matrix(~age + bone + place)
   rownames(full.design) <- paste0(age, bone, place, 1:3)
-  load("data/jaws3.R")
-  load("data/exprs.R")  
+
   rownames(dat) <- dat[, "probeset"]
   genes.tab <- xtabs(~unlist(dat$symbol))
   single.genes <- names(genes.tab)[genes.tab == 1]
@@ -265,14 +267,15 @@ server <- function(input, output){
     dat.top <- dat.sel[rownames(dat.sel) %in% top$Probeset, ]
 
 #### 
-#### HERE is when the data is now already processed 
+#### HERE is when the data is now already semi-processed 
 ####
-
-#    generateMAPLOTjson_f <- function(ones,twos,inputCONFIG,dat.sel,dat.top) 
     output$ma.plot <- renderPlot({
       ma.plot <- function(){
         par(mar = c(5, 5, 5, 8))
         lim <- max(abs(range(dat.sel$M)))
+####
+mList <-generateMAPLOTjson_f(ones,twos,inputCONFIG,dat.sel,dat.top) 
+maplotDF <- data.frame(mList)
         plot(NULL, cex = 0.9,
           xaxt = "n", yaxt = "n",
           xlab = "Average Expression",
@@ -323,6 +326,11 @@ server <- function(input, output){
         weights[colnames(dat.heat) %in% twos] <- 
           weights[colnames(dat.heat) %in% twos] + ifelse(xor(invert, inputCONFIGcomp == "bone"), -100, 100)
         extreme <- ceiling(10 *  max(dat.heat)) / 10
+
+####
+hList <-generateHEATMAPjson_f(ones,twos,inputCONFIG,dat.top,dat.heat) 
+heatmapDF <- data.frame(hList)
+
         heatmap.22(t(dat.heat),
           Rowv = as.integer(weights),
           col = ifelse(input$heatcol == "rg", redgreen, greenred),

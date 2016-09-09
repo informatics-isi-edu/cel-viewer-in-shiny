@@ -1,4 +1,14 @@
 
+## load in the raw gene expression data
+## 'dat' is the dataframe's name
+loadGeneDataViaURL_f <- function(inputURL) {
+  repeat{
+      con <- url(inputURL)
+      t <- try(load(con))
+      close(con)
+      if (!inherits(t, "try-error")) break}
+}
+
 generateMAPLOTjson_f <- function(ones,twos,inputCONFIG,dat.sel,dat.top) {
   MAINLABEL <- paste(unique(gsub("1$|2$|3$", "", c(ones, twos))), collapse = " ")
   dir <- gsub(" ", "_", MAINLABEL)
@@ -33,6 +43,7 @@ generateMAPLOTjson_f <- function(ones,twos,inputCONFIG,dat.sel,dat.top) {
   jsonList <- list(meta=metaList, data=dataList)
   maplotfn <- paste0(dir, "/", "MAplotData.json")
   write(toJSON(jsonList), maplotfn, append=FALSE)
+  return(dataList)
 }
 
 generateHEATMAPjson_f <- function(ones,twos,inputCONFIG,dat.top,dat.heat) {
@@ -61,4 +72,5 @@ generateHEATMAPjson_f <- function(ones,twos,inputCONFIG,dat.top,dat.heat) {
   jsonList=list(meta=metaList, data=heatmapList)
   heatmapfn <- paste0(dir, "/", "HeatmapData.json")
   write(toJSON(jsonList),heatmapfn, append=FALSE) 
+  return(heatmapList)
 }
