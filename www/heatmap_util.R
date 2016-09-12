@@ -7,7 +7,8 @@ library(RJSONIO)
 
 ## make the heatmap data from the json blob
 
-makeHeatmapData_f <- function(jjlist) {
+makeHeatmapData_f <- function(jlist) {
+
 #jlist<-fromJSON("../data/HeatmapData.json")
 
   data <- jlist$data
