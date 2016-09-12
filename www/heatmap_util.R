@@ -9,7 +9,8 @@ library(RJSONIO)
 
 makeHeatmapData_f <- function(jlist) {
 
-#jlist<-fromJSON("../data/HeatmapData.json")
+## DEBUG-IT
+##jlist<-fromJSON("../data/HeatmapData.json")
 
   data <- jlist$data
   symbol <- data$symbol ## genes
@@ -25,7 +26,6 @@ makeHeatmapData_f <- function(jlist) {
   names<-sapply(samples, function(x) x[[1]])
   vals<-sapply(samples, function(x) x[[2]])
 
-  print(vals)
   dimnames(vals) <- list(nsymbols,names)
   hval <- t(vals) # now row=samples, col=symbols
   return(hval)
@@ -68,13 +68,19 @@ py <- ggdend(dy$segments) + coord_flip()
 # heatmap
 col.ord <- order.dendrogram(dd.col)
 row.ord <- order.dendrogram(dd.row)
+## DEBUG-IT
+##browser()
+
 xx <- scale(hval)[col.ord, row.ord]
 xx_names <- attr(xx, "dimnames")
 df <- as.data.frame(xx)
 colnames(df) <- xx_names[[2]]
 df$sample <- xx_names[[1]]
 mdf <- reshape2::melt(df, id.vars="sample")
-p <- ggplot(mdf, aes(x = variable, y = sample)) + 
+## change from, [1] "sample"   "variable" "value"   
+## to, [1] "sample" "gene"   "value" 
+names(mdf)=c("sample","gene","value")
+p <- ggplot(mdf, aes(x = gene, y = sample)) + 
 theme(axis.text.x=element_text(angle=90, hjust=1)) +
      geom_tile(aes(fill = value))
 
@@ -106,10 +112,9 @@ ss <- subplot(px, p_empty, p, py, nrows = 2, margin = 0.02)  %>%
   xaxis4= list(domain= c(0.80, 1)),
   yaxis4= list(domain= c(0, 0.50))
                 )
-
   return(ss)
 }
 
-
-## run standalone
-##generatePlotlyHeatmap_f(NULL)
+## DEBUG-IT, run standalone
+##p <- generatePlotlyHeatmap_f(NULL)
+##print(p)
