@@ -1,4 +1,6 @@
 
+library(RJSONIO)
+
 ## load in the raw gene expression data
 ## 'dat' is the dataframe's name
 loadGeneDataViaURL_f <- function(inputURL) {
@@ -42,8 +44,8 @@ generateMAPLOTjson_f <- function(ones,twos,inputCONFIG,dat.sel,dat.top) {
   }
   jsonList <- list(meta=metaList, data=dataList)
   maplotfn <- paste0(dir, "/", "MAplotData.json")
-  write(toJSON(jsonList), maplotfn, append=FALSE)
-  return(dataList)
+##  write(toJSON(jsonList), maplotfn, append=FALSE)
+  return(jsonList)
 }
 
 generateHEATMAPjson_f <- function(ones,twos,inputCONFIG,dat.top,dat.heat) {
@@ -69,8 +71,8 @@ generateHEATMAPjson_f <- function(ones,twos,inputCONFIG,dat.top,dat.heat) {
   }
 
   heatmapList$samples <- sampleList
-  jsonList=list(meta=metaList, data=heatmapList)
+  jsonList <- list(meta=metaList, data=heatmapList)
   heatmapfn <- paste0(dir, "/", "HeatmapData.json")
-  write(toJSON(jsonList),heatmapfn, append=FALSE) 
-  return(heatmapList)
+#  write(toJSON(jsonList),heatmapfn, append=FALSE) 
+  return(jsonList)
 }
