@@ -269,8 +269,7 @@ addHandler(printLogJs)
     if (!is.null(dat.sel$symbol))
       dat.sel$symbol[is.na(dat.sel$symbol)] <-  rownames(dat.sel)[is.na(dat.sel$symbol)]
     dat.sel$color <- "black"
-    print("XXX")
-    dat.sel$color[dat.sel$symbol == mousecase(input$gene1) | rownames(dat.sel) == mousecase(input$gene1)] <- tolower(input$col1)
+    dat.sel$color[dat.sel$symbol %in% mousecase(input$gene1) | rownames(dat.sel) %in% mousecase(input$gene1)] <- tolower(input$col1)
 
     lfc <- ifelse(input$log, abs(as.numeric(input$fc)), log2(abs(as.numeric(input$fc))))
     top <- topTable(efit, coef = which(colnames(design) == target.col), 
@@ -382,6 +381,7 @@ mList <-generateMAPLOTjson_f(ones,twos,inputCONFIG,dat.sel,dat.top)
                labels = round(seq(-extreme, extreme, length = 6), 1), 
                padj = -0.25)},
           trace = "none", margins = c(5, 10),
+
           distfun.row = dist,
           distfun.col = function(...) {
             if (input$distfun == "E") return(dist(...))
@@ -410,7 +410,14 @@ mList <-generateMAPLOTjson_f(ones,twos,inputCONFIG,dat.sel,dat.top)
         extreme <- ceiling(10 *  max(dat.heat)) / 10
 
       hList <-generateHEATMAPjson_f(ones,twos,inputCONFIG,dat.top,dat.heat) 
-      generatePlotlyHeatmap_f(hList)
+## row are genes and col are samples
+      distfun.col <- dist
+      distfun.row <- function(...) {
+        if (input$distfun == "AC") return(cor.dist(..., abs = T))
+        if (input$distfun == "C") return(cor.dist(..., abs = F))
+        return(dist(...))
+      }
+      generatePlotlyHeatmap_f(hList, distfun.row, distfun.col)
     })
 
     rownames(top) <- NULL
@@ -419,17 +426,17 @@ mList <-generateMAPLOTjson_f(ones,twos,inputCONFIG,dat.sel,dat.top)
     top$Color <- dat.top$color[match(top$Probeset, rownames(dat.top))]
     top <- formatStyle(datatable(top), "Color", target = "row", 
       color = styleEqual(
-        c(0, input$col1, input$col2, input$col3, input$col4, input$col5),
-        c("white", input$col1, input$col2, input$col3, input$col4, input$col5)))
+        c(0, input$col1),
+        c("white", input$col1)))
   })
     
   output$bullseyes <- renderPlot({
   bullseyes <- function(){
-    genes <- c(input$gene1, input$gene2, input$gene3, input$gene4, input$gene5, input$gene6)
+    genes <- c(input$gene1)
     good.genes <- which(genes %in% dat$symbol | genes %in% dat$probeset)
     genes <- genes[good.genes]
     if (length(genes) == 0) return(plot.null)
-    colors <- c(input$col1, input$col2, input$col3, input$col4, input$col5, input$col6)
+    colors <- c(input$col1)
     colors <- colors[good.genes]
     exprs <- dat[dat$symbol %in% genes, ]
     exprs <- data.frame(
@@ -529,7 +536,7 @@ mList <-generateMAPLOTjson_f(ones,twos,inputCONFIG,dat.sel,dat.top)
       }}        
   bullseyes()
   }, height = function(){
-        genes <- c(input$gene1, input$gene2, input$gene3, input$gene4, input$gene5, input$gene6)
+        genes <- c(input$gene1)
         good.genes <- which(genes %in% dat$symbol | genes %in% dat$probeset)
         genes <- genes[good.genes]
         if (input$summary == "Z") num.probesets <- length(dat$probeset[dat$symbol %in% genes]) else

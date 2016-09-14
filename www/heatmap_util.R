@@ -1,4 +1,6 @@
 
+library(bioDist)
+
 library(ggplot2)
 library(ggdendro)
 library(plotly)
@@ -31,7 +33,7 @@ makeHeatmapData_f <- function(jlist) {
   return(hval)
 }
 
-generatePlotlyHeatmap_f <- function(jlist) {
+generatePlotlyHeatmap_f <- function(jlist, distfun.row, distfun.col) {
 
 pdf(NULL)
 hval <- makeHeatmapData_f(jlist)
@@ -46,9 +48,16 @@ viewer_m <- list(
 )
 
 #dendogram data
-x <- as.matrix(scale(hval))
-dd.col <- as.dendrogram(hclust(dist(x)))
-dd.row <- as.dendrogram(hclust(dist(t(x))))
+## row=genes, col=samples
+#x <- as.matrix(scale(hval))
+# x is 6x22
+#dd.col <- as.dendrogram(hclust( dist(x) ))
+#dd.col, with 2 branches and 6 members, at height 8.781363
+#dd.row <- as.dendrogram(hclust( cor.dist( t(x), abs=F )))
+#dd.row, with 2 branches and 22 members, at height 0.05241376
+x <- as.matrix(hval)
+dd.col <- as.dendrogram(hclust( distfun.col(x) ))
+dd.row <- as.dendrogram(hclust( distfun.row( t(x) )))
 dx <- dendro_data(dd.row)
 dy <- dendro_data(dd.col)
 
@@ -71,19 +80,34 @@ row.ord <- order.dendrogram(dd.row)
 ## DEBUG-IT
 ##browser()
 
-xx <- scale(hval)[col.ord, row.ord]
+xx <- hval[col.ord, row.ord]
 xx_names <- attr(xx, "dimnames")
 df <- as.data.frame(xx)
 colnames(df) <- xx_names[[2]]
-df$sample <- xx_names[[1]]
-mdf <- reshape2::melt(df, id.vars="sample")
+
+mycolor <- list( c(0, 'rgb(255,0,0)'),
+                 c(0.3, 'rgb(100,0,0)'),
+                 c(0.5, 'rgb(0,0,0)'),
+                 c(0.7, 'rgb(0,100,0)'),
+                 c(1, 'rgb(0,255,0)') )
+mybarlist <- list(tickangle=-90, title='', ticks="outside")
+
+p <- plot_ly(z=xx, type='heatmap', name='myTrace', x=xx_names[[2]], y=xx_names[[1]], colorbar= mybarlist, colorscale = mycolor, showscale=TRUE)
+
+
+#mdf <- reshape2::melt(df, id.vars="sample")
 ## change from, [1] "sample"   "variable" "value"   
 ## to, [1] "sample" "gene"   "value" 
-names(mdf)=c("sample","gene","value")
-p <- ggplot(mdf, aes(x = gene, y = sample)) + 
-theme(axis.text.x=element_text(angle=90, hjust=1)) +
-     geom_tile(aes(fill = value))
-
+#names(mdf)<-c("sample","gene","value")
+#myColorList <- list(c(0,'#FF0000'), c(0.3,'#640000'), 
+#                 c(0.5,'#000000'), c(0,7,'#006400'),
+#                 c(1,'#00FF00'))
+#p <- ggplot(mdf, aes(x = gene, y = sample, fill=value)) + 
+#theme(axis.text.x=element_text(angle=90, hjust=1)) +
+#     geom_tile()
+#p <- plotly_build(p)
+# Modify the plotly abject to add colorscale
+#p$data[[1]]$colorscale = myColor
 
 # hide axis ticks and grid lines
 eaxis <- list(
@@ -102,12 +126,12 @@ p_empty <- plotly_empty()
 
 ss <- subplot(px, p_empty, p, py, nrows = 2, margin = 0.02)  %>%
           layout(autosize = F, width = "100%", height = "90%",
-                  margin = viewer_m,
+                  margin = viewer_m, font=list(size=10), 
   xaxis= list(domain= c(0, 0.80)),
   yaxis= list(domain= c(0.50,1)),
   xaxis2= list(domain= c(0.80, 1)),
   yaxis2= list(domain= c(0.50, 1)),
-  xaxis3= list(domain= c(0, 0.80)),
+  xaxis3= list(domain= c(0, 0.80),tickangle=-90),
   yaxis3= list(domain= c(0, 0.50)),
   xaxis4= list(domain= c(0.80, 1)),
   yaxis4= list(domain= c(0, 0.50))
