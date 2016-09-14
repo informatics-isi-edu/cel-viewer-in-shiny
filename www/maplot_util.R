@@ -19,8 +19,9 @@ library(plotly)
 
 makeMAplotData_f <- function(jlist) {
 
+
 ## DEBUG-IT
-jlist<-fromJSON("../data/MAplotData.json")
+jlist<-fromJSON("MAplotData.json")
   data <- jlist$data
   blackPts <- data$blackPts
   otherPts <- data$otherPts
@@ -38,7 +39,7 @@ jlist<-fromJSON("../data/MAplotData.json")
   topY <- topPts$y
   topColor <- topPts$color
   topSymbol <- topPts$symbol
-  i<-0
+  i<-1
   sz<-length(topY)
   while(i<=sz) {
       if(topY[[i]] >= 0) {
@@ -77,10 +78,24 @@ blackPts <- hval$blackPts
 posPts <- hval$posPts
 negPts <- hval$negPts
  
+## with alittle cushion
 allY <- c( blackPts$y, posPts$y, negPts$y)
-lim <- max(abs(range(allY)))
-print(lim)
+ylim <- ceiling(max(abs(range(allY))) * 1.2)
+yrange_max <- ylim
+yrange_min <- ylim * (-1)
+
+allX <- c( blackPts$x, posPts$x, negPts$x)
+xlim <- ceiling(max(abs(range(allX))) * 1.2)
+xrange_max <- xlim
+xrange_min <- xlim * (-1)
+##
+
+topdf=as.matrix(topPts)
+p <- plot_ly(topdf, type='scatter', x=x, y=y, mode="markers")
+
+return (p)
 }
+
 
 ## DEBUG-IT, run standalone
 p <- generatePlotlyMAplot_f(NULL)

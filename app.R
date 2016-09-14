@@ -299,12 +299,6 @@ addHandler(printLogJs)
 #### 
 #### HERE is when the data is now already semi-processed 
 ####
-## format is a list
-#  {
-#  "blackPts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...] },
-#  "otherPts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...] },
-#  "topPts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...]}
-#  }
     output$ma.plotly <- renderPlotly({
       mList <-generateMAplotjson_f(ones,twos,inputCONFIG,dat.sel,dat.top) 
       generatePlotlyMAplot_f(mList)
