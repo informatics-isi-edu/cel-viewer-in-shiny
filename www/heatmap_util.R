@@ -1,14 +1,22 @@
-
-library(bioDist)
-
-library(ggplot2)
 library(ggdendro)
-library(plotly)
-library(RJSONIO)
+#library(RJSONIO)
 
 
 ## make the heatmap data from the json blob
-
+##  json blob format
+## 
+##  {
+##  "meta": {
+##      "type": "heatmap"
+##      "config" : { from configIt.R }
+##  }
+##  "data": {
+##      "symbol": [...],
+##      "probeset": [ ...],
+##      "samples": [{ "name":"10.5M.", "data":[...]},
+##                  { "name":"... } ]
+##  }
+##  } 
 makeHeatmapData_f <- function(jlist) {
 
 ## DEBUG-IT
@@ -92,7 +100,7 @@ mycolor <- list( c(0, 'rgb(255,0,0)'),
                  c(1, 'rgb(0,255,0)') )
 mybarlist <- list(tickangle=-90, title='', ticks="outside")
 
-p <- plot_ly(z=xx, type='heatmap', name='myTrace', x=xx_names[[2]], y=xx_names[[1]], colorbar= mybarlist, colorscale = mycolor, showscale=TRUE)
+p <- plot_ly(z=xx, type='heatmap', name='myTrace', x=xx_names[[2]], y=xx_names[[1]], colorbar= mybarlist, colorscale = mycolor, showscale=TRUE, len=0.5)
 
 
 #mdf <- reshape2::melt(df, id.vars="sample")

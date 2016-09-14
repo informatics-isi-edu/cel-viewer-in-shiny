@@ -11,7 +11,7 @@ loadGeneDataViaURL_f <- function(inputURL) {
       if (!inherits(t, "try-error")) break}
 }
 
-generateMAPLOTjson_f <- function(ones,twos,inputCONFIG,dat.sel,dat.top) {
+generateMAplotjson_f <- function(ones,twos,inputCONFIG,dat.sel,dat.top) {
   MAINLABEL <- paste(unique(gsub("1$|2$|3$", "", c(ones, twos))), collapse = " ")
   dir <- gsub(" ", "_", MAINLABEL)
   dir.create(dir)
@@ -48,7 +48,7 @@ generateMAPLOTjson_f <- function(ones,twos,inputCONFIG,dat.sel,dat.top) {
   return(jsonList)
 }
 
-generateHEATMAPjson_f <- function(ones,twos,inputCONFIG,dat.top,dat.heat) {
+generateHeatmapjson_f <- function(ones,twos,inputCONFIG,dat.top,dat.heat) {
   MAINLABEL <- paste(unique(gsub("1$|2$|3$", "", c(ones, twos))), collapse = " ")
   dir <- gsub(" ", "_", MAINLABEL)
   dir.create(dir)

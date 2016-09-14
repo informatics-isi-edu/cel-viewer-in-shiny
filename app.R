@@ -31,13 +31,12 @@ titlePanel("Gene Expression Comparison App"),
 sidebarLayout(
   div(class = "col-sm-4",
   tags$form(class = "well",
-    selectInput("dataset", "Dataset", "GSE67985", "GSE67985", width = "30%"),
+    textInput("url", "URL", "https://dev.facebase.org/~mei/data/urlexprs.R"),
+#    textInput("url", "URL", "data/exprs.R"),
     div(style="padding-bottom:3px", "Chai, Yang; Parada, Carolina; Grimaldi, Alexandre; Ho, Thach-Vu; Harunaga, Jill; Samuels, Bridget; Johnson, Daniel."),
     div(style="padding-bottom:3px", "Distal/proximal mandible/maxilla at embryonic day 10.5/11.5/12.5/13.5/14.5, 3 replicates/condition."),
     div(style="padding-bottom:3px", "Affymetrix Mouse Genome 430 2.0 Array."),
     div(style="padding-bottom:7px", "Mouse drawing by Darrin Lunde and Nguyen Truong Son."),
-    textInput("url", "URL", "https://dev.facebase.org/~mei/data/urlexprs.R"),
-#    textInput("url", "URL", "data/exprs.R"),
     conditionalPanel("!output.datloaded",
         helpText("Data is loading (may take a minute) ...")),
     conditionalPanel("output.datloaded", 
@@ -104,10 +103,12 @@ sidebarLayout(
   mainPanel(width = 8,
       tabsetPanel(
         tabPanel("Global", 
+div(style="border:2px solid orange", plotOutput("ma.plot", height = "500px")),
+div(style="border:2px solid blue", plotlyOutput("ma.plotPlotly", height = "500px")),
 
 div(style="border:2px solid green", plotOutput("heatmap", height = "450px")),
 div(style="border:2px solid red", plotlyOutput("heatmapPlotly", height = "450px")),
-#div(style="border:2px solid orange", plotOutput("ma.plot", height = "500px")),
+
         downloadButton("download.table", "Download table"),  br(), br(),
         dataTableOutput("table", width = "90%")),
 
@@ -136,7 +137,7 @@ addHandler(printLogJs)
 
   load("data/jaws3.R")
 
- # load("data/exprs.R")
+#  load("data/exprs.R")
 #  repeat{
 #      con <- url(input$url)
 #      con <- input$url
@@ -155,7 +156,7 @@ addHandler(printLogJs)
 #  }
 
   con <- url("https://dev.facebase.org/~mei/data/urlexprs.R")
-#  con <- url(as.input$url)
+#  con <- url(input$url)
   load(con)
   
 
@@ -298,12 +299,21 @@ addHandler(printLogJs)
 #### 
 #### HERE is when the data is now already semi-processed 
 ####
+## format is a list
+#  {
+#  "blackPts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...] },
+#  "otherPts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...] },
+#  "topPts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...]}
+#  }
+    output$ma.plotly <- renderPlotly({
+      mList <-generateMAplotjson_f(ones,twos,inputCONFIG,dat.sel,dat.top) 
+      generatePlotlyMAplot_f(mList)
+    })
+
     output$ma.plot <- renderPlot({
       ma.plot <- function(){
         par(mar = c(5, 5, 5, 8))
         lim <- max(abs(range(dat.sel$M)))
-####
-mList <-generateMAPLOTjson_f(ones,twos,inputCONFIG,dat.sel,dat.top) 
 
         plot(NULL, cex = 0.9,
           xaxt = "n", yaxt = "n",
@@ -337,16 +347,6 @@ mList <-generateMAPLOTjson_f(ones,twos,inputCONFIG,dat.sel,dat.top)
       ma.plot()
     })
       
-## format is a list
-#  {
-#  "blackPts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...] },
-#  "otherPts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...] },
-#  "topPts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...]}
-#  }
-
-#mList <-generateMAPLOTjson_f(ones,twos,inputCONFIG,dat.sel,dat.top) 
-#ma.plot.plotly <- generateMAPLOTplotly_f(mList)
-
     output$heatmap <- renderPlot({
       heatmap <- function(){
       withProgress({
@@ -409,7 +409,7 @@ mList <-generateMAPLOTjson_f(ones,twos,inputCONFIG,dat.sel,dat.top)
           weights[colnames(dat.heat) %in% twos] + ifelse(xor(invert, inputCONFIG$comp == "bone"), -100, 100)
         extreme <- ceiling(10 *  max(dat.heat)) / 10
 
-      hList <-generateHEATMAPjson_f(ones,twos,inputCONFIG,dat.top,dat.heat) 
+      hList <-generateHeatmapjson_f(ones,twos,inputCONFIG,dat.top,dat.heat) 
 ## row are genes and col are samples
       distfun.col <- dist
       distfun.row <- function(...) {
