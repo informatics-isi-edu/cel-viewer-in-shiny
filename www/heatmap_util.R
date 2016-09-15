@@ -49,9 +49,9 @@ hval <- makeHeatmapData_f(jlist)
 #https://plot.ly/r/setting-graph-size/
 viewer_m <- list(
   l = 100,
-  r = 50,
+  r = 10,
   b = 100,
-  t = 50,
+  t = 10,
   pad = 4
 )
 
@@ -98,7 +98,7 @@ mycolor <- list( c(0, 'rgb(255,0,0)'),
                  c(0.5, 'rgb(0,0,0)'),
                  c(0.7, 'rgb(0,100,0)'),
                  c(1, 'rgb(0,255,0)') )
-mybarlist <- list(tickangle=-90, title='', ticks="outside",len=0.5)
+mybarlist <- list(tickangle=-90, title='', ticks="outside",len=0.5, thickness=10, yanchor="top", xpad=0, ypad=0)
 
 p <- plot_ly(z=xx, type='heatmap', x=xx_names[[2]], y=xx_names[[1]], colorbar= mybarlist, colorscale = mycolor, showscale=TRUE)
 
@@ -132,17 +132,16 @@ p_empty <- plotly_empty()
 #pp <- ggplotly(p)
 
 
-ss <- subplot(px, p_empty, p, py, nrows = 2, margin = 0.02)  %>%
-          layout(autosize = F, width = "100%", height = "90%",
-                  margin = viewer_m, font=list(size=10), 
+ss <- subplot(px, p_empty, p, py, nrows = 2, margin = 0.02 )  %>%
+          layout( margin = viewer_m, font=list(size=10), 
   xaxis= list(domain= c(0, 0.80)),
-  yaxis= list(domain= c(0.50,1)),
+  yaxis= list(domain= c(0.60,1)),
   xaxis2= list(domain= c(0.80, 1)),
-  yaxis2= list(domain= c(0.50, 1)),
+  yaxis2= list(domain= c(0.60, 1)),
   xaxis3= list(domain= c(0, 0.80),tickangle=-90),
-  yaxis3= list(domain= c(0, 0.50)),
+  yaxis3= list(domain= c(0, 0.60)),
   xaxis4= list(domain= c(0.80, 1)),
-  yaxis4= list(domain= c(0, 0.50))
+  yaxis4= list(domain= c(0, 0.60))
                 )
   return(ss)
 }

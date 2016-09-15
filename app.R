@@ -42,19 +42,11 @@ sidebarLayout(
     conditionalPanel("output.datloaded", 
         helpText("Data is loaded."))),
   tags$form(class = "well",
-      div(tags$label("Highlight genes/probesets and color")),
+      div(tags$label("Highlight one or more genes, ")),
       bootstrapPage(
-      div(style="display:inline-block; width:70%", textInput("gene1", NULL, "name"))),
-      bootstrapPage(
-      div(style="display:inline-block; width:20%", textInput("col1", NULL, "blue")))),
-
-#  tags$form(class = "well",
-#    checkboxGroupInput("sel", "Select samples (each is three replicates)",
-#      choices = c(
-#        "E10.5_Mnd_D", "E11.5_Mnd_D", "E12.5_Mnd_D", "E13.5_Mnd_D", "E14.5_Mnd_D",
-#        "E10.5_Mnd_P", "E11.5_Mnd_P", "E12.5_Mnd_P", "E13.5_Mnd_P", "E14.5_Mnd_P",
-#        "E10.5_Max_D", "E11.5_Max_D", "E12.5_Max_D", "E13.5_Max_D", "E14.5_Max_D",
-#        "E10.5_Max_P", "E11.5_Max_P", "E12.5_Max_P", "E13.5_Max_P", "E14.5_Max_P"), inline = T)),
+      div(style="display:inline-block; width:100%", textInput("gene1", NULL, "name")),
+      div(style="padding-bottom:3px", "(eg. Tnnt2 Myl3 Rgs5)"))
+      ),
 
   tags$form(class = "well",
    if (inputCONFIG$comp == "place"){ 
@@ -96,25 +88,18 @@ sidebarLayout(
         choices = c("absolute correlation" = "AC", "correlation" = "C", "Euclidean distance" = "E"),
           selected = "AC", inline = T),
     radioButtons("heatscale", "For heatmap, scale genes by",
-        choices = c("mean-centering" = "MC", "Z-score" = "Z", "none" = "N"), selected = "MC", inline = T),
-  radioButtons("basecol", "For individual plots, zero point is",
-        choices = c("E10.5", "mean of ages"), selected = "E10.5", inline = T))),
+        choices = c("mean-centering" = "MC", "Z-score" = "Z", "none" = "N"), selected = "MC", inline = T))),
 
   mainPanel(width = 8,
-      tabsetPanel(
-        tabPanel("Global", 
-div(style="border:2px solid orange", plotOutput("ma.plot", height = "500px")),
-div(style="border:2px solid blue", plotlyOutput("ma.plotPlotly", height = "500px")),
 
-div(style="border:2px solid green", plotOutput("heatmap", height = "450px")),
-div(style="border:2px solid red", plotlyOutput("heatmapPlotly", height = "450px")),
+    div(style="border:2px solid orange", plotOutput("ma.plot", height = "500px")),
+    div(style="border:2px solid blue", plotlyOutput("ma.plotly", height = "500px")),
 
-        downloadButton("download.table", "Download table"),  br(), br(),
-        dataTableOutput("table", width = "90%")),
+    div(style="border:2px solid green", plotOutput("heatmap", height = "450px")),
+    div(style="border:2px solid red", plotlyOutput("heatmapPlotly", height = "450px")),
 
-        tabPanel("Individual",
-          plotOutput("bullseyes")
-          )))
+    downloadButton("download.table", "Download table"),  br(), br(),
+    dataTableOutput("table", width = "90%"))
 ) ## sidebarLayout
 )
 
@@ -134,6 +119,7 @@ addHandler(printLogJs)
   source("www/old_util.R")
   source("www/util.R")
   source("www/heatmap_util.R")
+  source("www/maplot_util.R")
 
   load("data/jaws3.R")
 
@@ -270,7 +256,8 @@ addHandler(printLogJs)
     if (!is.null(dat.sel$symbol))
       dat.sel$symbol[is.na(dat.sel$symbol)] <-  rownames(dat.sel)[is.na(dat.sel$symbol)]
     dat.sel$color <- "black"
-    dat.sel$color[dat.sel$symbol %in% mousecase(input$gene1) | rownames(dat.sel) %in% mousecase(input$gene1)] <- tolower(input$col1)
+## set input$col1 to 'blue' as placeholder
+    dat.sel$color[dat.sel$symbol %in% mousecase(input$gene1) | rownames(dat.sel) %in% mousecase(input$gene1)] <- "blue" 
 
     lfc <- ifelse(input$log, abs(as.numeric(input$fc)), log2(abs(as.numeric(input$fc))))
     top <- topTable(efit, coef = which(colnames(design) == target.col), 
@@ -420,127 +407,10 @@ addHandler(printLogJs)
     top$Color <- dat.top$color[match(top$Probeset, rownames(dat.top))]
     top <- formatStyle(datatable(top), "Color", target = "row", 
       color = styleEqual(
-        c(0, input$col1),
-        c("white", input$col1)))
+        c(0, "blue"),
+        c("white", "blue")))
   })
     
-  output$bullseyes <- renderPlot({
-  bullseyes <- function(){
-    genes <- c(input$gene1)
-    good.genes <- which(genes %in% dat$symbol | genes %in% dat$probeset)
-    genes <- genes[good.genes]
-    if (length(genes) == 0) return(plot.null)
-    colors <- c(input$col1)
-    colors <- colors[good.genes]
-    exprs <- dat[dat$symbol %in% genes, ]
-    exprs <- data.frame(
-      symbol = exprs$symbol,
-      probeset = exprs$probeset,
-      E14.5MaxD = rowMeans(exprs[, grep("14.5MaxD", colnames(exprs))]),
-      E13.5MaxD = rowMeans(exprs[, grep("13.5MaxD", colnames(exprs))]),
-      E12.5MaxD = rowMeans(exprs[, grep("12.5MaxD", colnames(exprs))]),
-      E11.5MaxD = rowMeans(exprs[, grep("11.5MaxD", colnames(exprs))]),
-      E10.5MaxD = rowMeans(exprs[, grep("10.5MaxD", colnames(exprs))]),
-      E14.5MaxP = rowMeans(exprs[, grep("14.5MaxP", colnames(exprs))]),
-      E13.5MaxP = rowMeans(exprs[, grep("13.5MaxP", colnames(exprs))]),
-      E12.5MaxP = rowMeans(exprs[, grep("12.5MaxP", colnames(exprs))]),
-      E11.5MaxP = rowMeans(exprs[, grep("11.5MaxP", colnames(exprs))]),
-      E10.5MaxP = rowMeans(exprs[, grep("10.5MaxP", colnames(exprs))]),
-      E14.5MndD = rowMeans(exprs[, grep("14.5MndD", colnames(exprs))]),
-      E13.5MndD = rowMeans(exprs[, grep("13.5MndD", colnames(exprs))]),
-      E12.5MndD = rowMeans(exprs[, grep("12.5MndD", colnames(exprs))]),
-      E11.5MndD = rowMeans(exprs[, grep("11.5MndD", colnames(exprs))]),
-      E10.5MndD = rowMeans(exprs[, grep("10.5MndD", colnames(exprs))]),
-      E14.5MndP = rowMeans(exprs[, grep("14.5MndP", colnames(exprs))]),
-      E13.5MndP = rowMeans(exprs[, grep("13.5MndP", colnames(exprs))]),
-      E12.5MndP = rowMeans(exprs[, grep("12.5MndP", colnames(exprs))]),
-      E11.5MndP = rowMeans(exprs[, grep("11.5MndP", colnames(exprs))]),
-      E10.5MndP = rowMeans(exprs[, grep("10.5MndP", colnames(exprs))]),
-      stringsAsFactors = F)
-    if (input$summary %in% c("AVE")){
-      exprs.full <- exprs
-      exprs <- ddply(exprs, .(symbol), numcolwise(mean))
-      for (i in 1:nrow(exprs)) exprs$probeset[i] <- 
-        paste(exprs.full$probeset[exprs.full$symbol == exprs$symbol[i]], collapse = "\n")
-      exprs <- exprs[, c(1, 22, 2:21)]}
-    if (input$summary == "A"){
-      exprs$rms <- rowMeans(exprs[, 3:21])
-      maxs <- ddply(exprs, .(symbol), summarise, mx = which.max(rms))
-      expr <- exprs[0, ]
-      for (sym in maxs$symbol)
-        expr <- rbind(expr, exprs[exprs$symbol == sym, ][maxs$mx[maxs$symbol == sym], ])
-      exprs <- expr}
-    if (input$summary == "M"){
-      exprs$range <- apply(exprs[, -(1:2)], 1, function(x) diff(range(x)))
-      maxs <- ddply(exprs, .(symbol), summarise, mx = which.max(range))
-      expr <- exprs[0, ]
-      for (sym in maxs$symbol)
-        expr <- rbind(expr, exprs[exprs$symbol == sym, ][maxs$mx[maxs$symbol == sym], ])
-      exprs <- expr}
-    exprs <- exprs[order(match(exprs$symbol, genes), exprs$probeset), ]
-    if (input$basecol == "mean of ages")
-      exprs[, -(1:2)] <- sweep(exprs[, -(1:2)], 1, rowMeans(exprs[, -(1:2)]))
-    if (input$basecol == "E10.5") exprs[, -(1:2)] <-
-      sweep(exprs[, -(1:2)], 1, rowMeans(exprs[, grep("E10.5", colnames(exprs))]))
-    if (nrow(exprs) == 1) par(mfrow = c(1, 1)) else par(mfrow = c(ceiling(nrow(exprs) / 2), 2))
-    par(mar = c(1, 1, 1, 1))          
-    mn <- min(unlist(exprs[, -(1:2)]))
-    mx <- max(unlist(exprs[, -(1:2)]))
-    two <- ifelse(nrow(exprs) == 2, T, F)
-    for (i in 1:nrow(exprs)){
-      expr <- exprs[i, ]
-      pal <- colorRampPalette(c("white", colors[which(genes == expr$symbol)]))(1001)
-      cols <- function(x) pal[round((x - mn) / (mx - mn) * 1000) + 1]
-      plot(c(-1.25, 1.25), c(-1.875, 1.875), type = "n", xaxt = "n", yaxt = "n", frame.plot = F)
-       rasterImage(bg, par("usr")[1], par("usr")[3], par("usr")[2], par("usr")[4])
-      dmax <- unlist(expr[, grep("MaxD", colnames(expr))])
-      pmax <- unlist(expr[, grep("MaxP", colnames(expr))])
-      dmnd <- unlist(expr[, grep("MndD", colnames(expr))])
-      pmnd <- unlist(expr[, grep("MndP", colnames(expr))])
-      all <- c(dmax, pmax, dmnd, pmnd)
-       if (length(dmax) == 0) return(plot.null())
-      quarter.circle(0, 0, c(1.025, 0.825, 0.625, 0.425, 0.225),
-        quadrant = 1, border = NA, col = cols(dmax))
-      quarter.circle(0, 0, c(1.025, 0.825, 0.625, 0.425, 0.225),
-        quadrant = 2, border = NA, col = cols(pmax))
-      quarter.circle(0, 0, c(1.025, 0.825, 0.625, 0.425, 0.225),
-        quadrant = 3, border = NA, col = cols(pmnd))
-      quarter.circle(0, 0, c(1.025, 0.825, 0.625, 0.425, 0.225),
-        quadrant = 4, border = NA, col = cols(dmnd))
-      draw.circle(0, 0, c(1.025, 0.825, 0.625, 0.425, 0.225), border = "black", lwd = 0.5)
-      segments(-1.025, c(-0.028, 0.028), 1.025, c(-0.028, 0.028), lwd = 0.5)
-      segments(c(-0.03, 0.03), -1.025 * getYmult(), c(-0.03, 0.03), 1.025 * getYmult(), lwd = 0.5)
-      rect(-2, -0.025, 2, 0.025, border = NA, col = "white")
-      rect(-0.025, -1.1, 0.025, 1.1, border = NA, col = "white")
-      text(c(0.125, 0.325, 0.525, 0.725, 0.925), 0, c("E10.5", "E11.5", "E12.5", "E13.5", "E14.5"),
-        cex = ifelse(two, 0.75, 1))
-      arctext("distal maxilla", c(0, 0), 1.1, middle = pi / 4, cex = ifelse(two, 1, 1.5))
-      arctext("proximal maxilla", c(0, 0), 1.1, middle = 3 * pi / 4, cex = ifelse(two, 1, 1.5))
-      arctext("proximal mandible", c(0, 0), 1.1, middle = 5 * pi / 4, clockwise = F, cex = ifelse(two, 1, 1.5))
-      arctext("distal mandible", c(0, 0), 1.1, middle = 7 * pi / 4, clockwise = F, cex = ifelse(two, 1, 1.5))
-      text(1.2, 1.95, expr$symbol, adj = 1, cex = ifelse(two, 2, 3))
-      text(1.2, 1.85, expr$probeset, adj = c(1, 1), cex = ifelse(two, 1, 1.5))
-      rect(seq(0.575, 1.245, 0.005), -1.9, seq(0.58, 1.25, 0.005), -1.75, border = NA,
-        col = colorRampPalette(cols(c(min(all), max(all))))(135))
-      segments(0.575 - min(all) / diff(range(all)) * (1.245 - 0.575), -1.9, 
-        0.575 - min(all) / diff(range(all)) * (1.245 - 0.575), -1.75, col = "white", lwd = ifelse(two, 3, 4))
-      text(c(0.63, 1.19), -1.95,
-        format(round(c(min(all), max(all)), 2), nsmall = 2), cex = ifelse(two, 0.75, 1))
-      text(0.915, -1.7, "Log2 Relative Expression", cex = ifelse(two, 0.75, 1))
-      }}        
-  bullseyes()
-  }, height = function(){
-        genes <- c(input$gene1)
-        good.genes <- which(genes %in% dat$symbol | genes %in% dat$probeset)
-        genes <- genes[good.genes]
-        if (input$summary == "Z") num.probesets <- length(dat$probeset[dat$symbol %in% genes]) else
-          num.probesets <- length(genes)
-        if (num.probesets == 0) return(1300)
-        if (num.probesets == 1) return(1300)
-        if (num.probesets == 2) return(700)
-        if (num.probesets %in% 3:4) return(1400)
-        if (num.probesets > 4) return(1400 + (num.probesets - 4) * 450)})
-
 }
     
 shinyApp(ui = ui, server = server)

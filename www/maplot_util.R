@@ -75,6 +75,14 @@ makeMAplotData_f <- function(jlist) {
 #
 generatePlotlyMAplot_f <- function(jlist) {
 
+viewer_m <- list(
+  l = 100,
+  r = 50,
+  b = 100,
+  t = 50,
+  pad = 4
+)
+
 pdf(NULL)
 hval <- makeMAplotData_f(jlist)
 
@@ -90,39 +98,40 @@ yrange_max <- ylim
 yrange_min <- ylim * (-1)
 
 allX <- c( blackPts$x, posPts$x, negPts$x)
-xrange_max <- ceiling(max(range(allX)) * 1.2)
-xrange_min <- ceiling(min(range(allX)) * 1.2)
-if(xrange_min > 0) xrange_min <- 0
+xrange_max <- ceiling(max(range(allX)))+1
+xrange_min <- floor(min(range(allX)))-1
 ##
 
-markerlist <- list(size=8, color='#424242', symbol=100)
+markerlist <- list(size=6, color='#424242', symbol=100)
 
 p <- plot_ly(data=blackPts, type='scatter', x=x, y=y, 
                   textposition="top right",
                   text=symbol,
-                  name='base Pts',
+                  showlegend = FALSE,
                   marker=markerlist,  mode="markers") %>%
   layout( hovermode = 'closest',
-          xaxis = list( title="", range= list(xrange_min, xrange_max)),
+          margin = viewer_m, 
+          xaxis = list( title="Average Expression", range= list(xrange_min, xrange_max)),
           yaxis = list( title="", range= list(yrange_min, yrange_max)))
 
-p <- addMAplotDataTrace_f(p, posPts, "top center", 'red', 'positive topPts')
-p <- addMAplotDataTrace_f(p, negPts, "bottom center", 'green', 'negative topPts')
 xlist <- xrange_min:xrange_max
 p <- addMAplotLineTrace_f(p, xlist=xlist, yval=2, 'grey')
 p <- addMAplotLineTrace_f(p, xlist=xlist, yval=-2, 'grey')
+
+p <- addMAplotDataTrace_f(p, posPts, "top center", '#008b00')
+p <- addMAplotDataTrace_f(p, negPts, "bottom center", '#8b0000')
 
 return (p)
 }
 
 # "Pts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...]}
 # add a trace to a scatter plot
-addMAplotDataTrace_f <- function(p, nPts, nPos, nColor, nName) {
-  markerlist <- list(size=12,color=nColor)
+addMAplotDataTrace_f <- function(p, nPts, nPos, nColor) {
+  markerlist <- list(size=8,color=nColor)
   q <- p %>% add_trace(data=nPts, type='scatter', x=x, y=y, 
                   textposition=nPos,
+                  showlegend = FALSE,
                   text=symbol,
-                  name=nName,
                   marker=markerlist,  mode="text+markers")
   return(q)
 }
@@ -131,7 +140,7 @@ addMAplotLineTrace_f <- function(p, xlist, yval, nColor) {
   n=length(xlist)
   ylist <- rep(yval:yval,each=n)
   q <- p %>% add_trace(x = xlist, y = ylist,
-        opacity = 0.5,
+        opacity = 0.4,
         line = list(dash="dashed", color=nColor),
         showlegend = FALSE,
         mode="lines")
