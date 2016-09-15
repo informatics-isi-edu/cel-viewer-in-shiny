@@ -98,9 +98,9 @@ mycolor <- list( c(0, 'rgb(255,0,0)'),
                  c(0.5, 'rgb(0,0,0)'),
                  c(0.7, 'rgb(0,100,0)'),
                  c(1, 'rgb(0,255,0)') )
-mybarlist <- list(tickangle=-90, title='', ticks="outside")
+mybarlist <- list(tickangle=-90, title='', ticks="outside",len=0.5)
 
-p <- plot_ly(z=xx, type='heatmap', x=xx_names[[2]], y=xx_names[[1]], colorbar= mybarlist, colorscale = mycolor, showscale=TRUE, len=0.5)
+p <- plot_ly(z=xx, type='heatmap', x=xx_names[[2]], y=xx_names[[1]], colorbar= mybarlist, colorscale = mycolor, showscale=TRUE)
 
 
 #mdf <- reshape2::melt(df, id.vars="sample")

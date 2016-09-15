@@ -1,5 +1,7 @@
-library(RJSONIO)
 library(plotly)
+
+##DEBUG-IT
+##library(RJSONIO)
 
 
 ## make the maplot data from the json blob
@@ -16,12 +18,13 @@ library(plotly)
 ##           }
 ## }
 
+grColor <- c('rgb(0,139,0)', 'rgb(139,0,0)')
+rgColor <- c('rgb(139,0,0)', 'rgb(0,139,0)')
 
 makeMAplotData_f <- function(jlist) {
 
-
-## DEBUG-IT
-jlist<-fromJSON("MAplotData.json")
+##DEBUG-IT
+##jlist<-fromJSON("MAplotData.json")
   data <- jlist$data
   blackPts <- data$blackPts
   otherPts <- data$otherPts
@@ -48,10 +51,10 @@ jlist<-fromJSON("MAplotData.json")
           posColor <- c(posColor, topColor[[i]])
           posSymbol <- c(posSymbol, topSymbol[[i]])
       } else {
-          negX <- c(negX, negX[[i]])
-          negY <- c(negY, negY[[i]])
-          negColor <- c(negColor, negColor[[i]])
-          negSymbol <- c(negSymbol, negSymbol[[i]])
+          negX <- c(negX, topX[[i]])
+          negY <- c(negY, topY[[i]])
+          negColor <- c(negColor, topColor[[i]])
+          negSymbol <- c(negSymbol, topSymbol[[i]])
       }
       i=i+1
   }
@@ -61,13 +64,15 @@ jlist<-fromJSON("MAplotData.json")
   return(newdata)
 }
 
-
 ## format is a list
 #  {
 #  "blackPts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...] },
 #  "posPts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...] },
 #  "negPts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...]}
 #  }
+#
+#  GenesTrace=3; // 0=blackPts, 1=posPts, 2=negPts, 3=special
+#
 generatePlotlyMAplot_f <- function(jlist) {
 
 pdf(NULL)
@@ -85,19 +90,62 @@ yrange_max <- ylim
 yrange_min <- ylim * (-1)
 
 allX <- c( blackPts$x, posPts$x, negPts$x)
-xlim <- ceiling(max(abs(range(allX))) * 1.2)
-xrange_max <- xlim
-xrange_min <- xlim * (-1)
+xrange_max <- ceiling(max(range(allX)) * 1.2)
+xrange_min <- ceiling(min(range(allX)) * 1.2)
+if(xrange_min > 0) xrange_min <- 0
 ##
 
-topdf=as.matrix(topPts)
-p <- plot_ly(topdf, type='scatter', x=x, y=y, mode="markers")
+markerlist <- list(size=8, color='#424242', symbol=100)
+
+p <- plot_ly(data=blackPts, type='scatter', x=x, y=y, 
+                  textposition="top right",
+                  text=symbol,
+                  name='base Pts',
+                  marker=markerlist,  mode="markers") %>%
+  layout( hovermode = 'closest',
+          xaxis = list( title="", range= list(xrange_min, xrange_max)),
+          yaxis = list( title="", range= list(yrange_min, yrange_max)))
+
+p <- addMAplotDataTrace_f(p, posPts, "top center", 'red', 'positive topPts')
+p <- addMAplotDataTrace_f(p, negPts, "bottom center", 'green', 'negative topPts')
+xlist <- xrange_min:xrange_max
+p <- addMAplotLineTrace_f(p, xlist=xlist, yval=2, 'grey')
+p <- addMAplotLineTrace_f(p, xlist=xlist, yval=-2, 'grey')
 
 return (p)
 }
 
+# "Pts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...]}
+# add a trace to a scatter plot
+addMAplotDataTrace_f <- function(p, nPts, nPos, nColor, nName) {
+  markerlist <- list(size=12,color=nColor)
+  q <- p %>% add_trace(data=nPts, type='scatter', x=x, y=y, 
+                  textposition=nPos,
+                  text=symbol,
+                  name=nName,
+                  marker=markerlist,  mode="text+markers")
+  return(q)
+}
 
-## DEBUG-IT, run standalone
-p <- generatePlotlyMAplot_f(NULL)
-print(p)
+addMAplotLineTrace_f <- function(p, xlist, yval, nColor) {
+  n=length(xlist)
+  ylist <- rep(yval:yval,each=n)
+  q <- p %>% add_trace(x = xlist, y = ylist,
+        opacity = 0.5,
+        line = list(dash="dashed", color=nColor),
+        showlegend = FALSE,
+        mode="lines")
+  return(q)
+}
+
+turnOffMAplotDataTrace_f <- function(p, traceId) {
+##
+}
+turnOnMAplotDataTrace_f <- function(p, traceId) {
+##
+}
+
+##DEBUG-IT, run standalone
+##p <- generatePlotlyMAplot_f(NULL)
+##print(p)
                                  
