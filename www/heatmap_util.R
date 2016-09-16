@@ -1,4 +1,5 @@
 library(ggdendro)
+library(reshape2)
 #library(RJSONIO)
 
 
@@ -51,8 +52,8 @@ viewer_m <- list(
   l = 100,
   r = 10,
   b = 100,
-  t = 10,
-  pad = 4
+  t = 20,
+  pad = 2
 )
 
 #dendogram data
@@ -73,8 +74,9 @@ dy <- dendro_data(dd.col)
 ggdend <- function(df) {
   ggplot() +
     geom_segment(data = df, aes(x=x, y=y, xend=xend, yend=yend)) +
-    labs(x = "", y = "") + theme_minimal() +
+    labs(x = "", y = "") + theme_bw() +
     theme(axis.text = element_blank(), axis.ticks = element_blank(),
+          panel.border = element_blank(), 
           panel.grid = element_blank())
 }
 
@@ -93,36 +95,22 @@ xx_names <- attr(xx, "dimnames")
 df <- as.data.frame(xx)
 colnames(df) <- xx_names[[2]]
 
-mycolor <- list( c(0, 'rgb(255,0,0)'),
-                 c(0.3, 'rgb(100,0,0)'),
-                 c(0.5, 'rgb(0,0,0)'),
-                 c(0.7, 'rgb(0,100,0)'),
-                 c(1, 'rgb(0,255,0)') )
-mybarlist <- list(tickangle=-90, title='', ticks="outside",len=0.5, thickness=10, yanchor="top", xpad=0, ypad=0)
-
-p <- plot_ly(z=xx, type='heatmap', x=xx_names[[2]], y=xx_names[[1]], colorbar= mybarlist, colorscale = mycolor, showscale=TRUE)
-
-
-#mdf <- reshape2::melt(df, id.vars="sample")
+df$sample <- xx_names[[1]]
+mdf <- reshape2::melt(df, id.vars="sample")
 ## change from, [1] "sample"   "variable" "value"   
 ## to, [1] "sample" "gene"   "value" 
-#names(mdf)<-c("sample","gene","value")
-#myColorList <- list(c(0,'#FF0000'), c(0.3,'#640000'), 
-#                 c(0.5,'#000000'), c(0,7,'#006400'),
-#                 c(1,'#00FF00'))
-#p <- ggplot(mdf, aes(x = gene, y = sample, fill=value)) + 
-#theme(axis.text.x=element_text(angle=90, hjust=1)) +
-#     geom_tile()
-#p <- plotly_build(p)
-# Modify the plotly abject to add colorscale
-#p$data[[1]]$colorscale = myColor
+names(mdf)<-c("sample","gene","value")
+p <- ggplot(mdf, aes(x = gene, y = sample, fill= value)) +
+     labs(x = "", y = "", fill = "") +
+     geom_tile() +
+     theme_bw() +
+     theme(axis.text.x=element_text(angle=45, hjust=1))+
+     theme(panel.border=element_blank()) +
+     scale_fill_gradient2(low = '#FF0000', mid='#000000', high = '#00FF00')
+
 
 # hide axis ticks and grid lines
-eaxis <- list(
-  showticklabels = FALSE,
-  showgrid = FALSE,
-  zeroline = FALSE
-)
+eaxis <- list( showgrid = FALSE, zeroline = FALSE )
 
 p_empty <- plotly_empty()
 # plot_ly(filename="r-docs/dendrogram") %>%
@@ -132,17 +120,9 @@ p_empty <- plotly_empty()
 #pp <- ggplotly(p)
 
 
-ss <- subplot(px, p_empty, p, py, nrows = 2, margin = 0.02 )  %>%
-          layout( margin = viewer_m, font=list(size=10), 
-  xaxis= list(domain= c(0, 0.80)),
-  yaxis= list(domain= c(0.60,1)),
-  xaxis2= list(domain= c(0.80, 1)),
-  yaxis2= list(domain= c(0.60, 1)),
-  xaxis3= list(domain= c(0, 0.80),tickangle=-90),
-  yaxis3= list(domain= c(0, 0.60)),
-  xaxis4= list(domain= c(0.80, 1)),
-  yaxis4= list(domain= c(0, 0.60))
-                )
+ss <- subplot(px, p_empty, p, py, nrows = 2, margin=0, 
+      shareX=TRUE, shareY=TRUE, widths=c(0.8,0.2), heights=c(0.3,0.7))  %>%
+      layout( margin = viewer_m)
   return(ss)
 }
 
