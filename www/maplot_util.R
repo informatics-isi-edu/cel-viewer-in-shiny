@@ -60,7 +60,7 @@ makeMAplotData_f <- function(jlist) {
   }
   posPts <- list( x=posX, y=posY, symbol=posSymbol, color=posColor)
   negPts <- list( x=negX, y=negY, symbol=negSymbol, color=negColor)
-  newdata <- list( blackPts = blackPts, posPts=posPts, negPts=negPts, otherPts=otherPts))
+  newdata <- list( blackPts = blackPts, posPts=posPts, negPts=negPts, otherPts=otherPts)
   return(newdata)
 }
 
@@ -121,11 +121,12 @@ xlist <- xrange_min:xrange_max
 p <- addMAplotLineTrace_f(p, xlist=xlist, yval=2, 'grey')
 p <- addMAplotLineTrace_f(p, xlist=xlist, yval=-2, 'grey')
 
+if( ! is.null(otherPts) ) {
+  p <- addMAplotDataTrace_f(p, otherPts, "top center", '#00FFFF')
+} else {
 p <- addMAplotDataTrace_f(p, posPts, "top center", '#008b00')
 p <- addMAplotDataTrace_f(p, negPts, "bottom center", '#8b0000')
-#if(otherPts && nrows(otherPts) > 0) {
-#  p <- addMAplotDataTrace_f(p, otherPts, "top center", '#00008b')
-#}
+}
 
 return (p)
 }
