@@ -288,7 +288,13 @@ addHandler(printLogJs)
 ####
     output$ma.plotly <- renderPlotly({
       mList <-generateMAplotjson_f(ones,twos,inputCONFIG,dat.sel,dat.top) 
-      generatePlotlyMAplot_f(mList)
+      my.ylab <- paste0(one,
+            paste(rep(" ", ifelse(input$log, 15, 20)), collapse = ""),
+            ifelse(input$log, "Log2 Fold Change", "Fold Change"),
+            paste(rep(" ", ifelse(input$log, 15, 20)), collapse = ""), two)
+      my.xlab <- "Average Expression"
+      my.title <- paste(unique(gsub("1$|2$|3$", "", c(ones, twos))), collapse = " ") 
+      generatePlotlyMAplot_f(mList,my.xlab,my.ylab,my.title)
     })
 
     output$ma.plot <- renderPlot({
@@ -390,7 +396,6 @@ addHandler(printLogJs)
           weights[colnames(dat.heat) %in% twos] + ifelse(xor(invert, inputCONFIG$comp == "bone"), -100, 100)
         extreme <- ceiling(10 *  max(dat.heat)) / 10
 
-      hList <-generateHeatmapjson_f(ones,twos,inputCONFIG,dat.top,dat.heat) 
 ## row are genes and col are samples
       distfun.col <- dist
       distfun.row <- function(...) {
@@ -398,7 +403,10 @@ addHandler(printLogJs)
         if (input$distfun == "C") return(cor.dist(..., abs = F))
         return(dist(...))
       }
-      generatePlotlyHeatmap_f(hList, distfun.row, distfun.col)
+      my.color <- input$heatcol 
+      my.xlab <- ifelse(input$log, "Log2 Fold Change", "Fold Change")
+      hList <-generateHeatmapjson_f(ones,twos,inputCONFIG,dat.top,dat.heat) 
+      generatePlotlyHeatmap_f(hList, distfun.row, distfun.col,my.color,my.xlab)
     })
 
     rownames(top) <- NULL

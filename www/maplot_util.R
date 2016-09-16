@@ -60,7 +60,7 @@ makeMAplotData_f <- function(jlist) {
   }
   posPts <- list( x=posX, y=posY, symbol=posSymbol, color=posColor)
   negPts <- list( x=negX, y=negY, symbol=negSymbol, color=negColor)
-  newdata <- list( blackPts = blackPts, posPts=posPts, negPts=negPts)
+  newdata <- list( blackPts = blackPts, posPts=posPts, negPts=negPts, otherPts=otherPts))
   return(newdata)
 }
 
@@ -69,11 +69,12 @@ makeMAplotData_f <- function(jlist) {
 #  "blackPts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...] },
 #  "posPts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...] },
 #  "negPts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...]}
+#  "otherPts": { "x": [ 10.317,..], "y": [ ...], "symbol":[..], "color":[...]}
 #  }
 #
-#  GenesTrace=3; // 0=blackPts, 1=posPts, 2=negPts, 3=special
+#  GenesTrace=3; // 0=blackPts, 1=line(2), 2=line(-2) 3=posPts, 4=negPts, 5=special
 #
-generatePlotlyMAplot_f <- function(jlist) {
+generatePlotlyMAplot_f <- function(jlist,my.xlab,my.ylab,my.title) {
 
 viewer_m <- list(
   l = 100,
@@ -86,23 +87,24 @@ viewer_m <- list(
 pdf(NULL)
 hval <- makeMAplotData_f(jlist)
 
-## figure out the range of y from blackPts+posPts+negPts' 
+## figure out the range of y from just blackPts
 blackPts <- hval$blackPts
 posPts <- hval$posPts
 negPts <- hval$negPts
+otherPts <- hval$otherPts
  
 ## with alittle cushion
-allY <- c( blackPts$y, posPts$y, negPts$y)
+allY <- c( blackPts$y)
 ylim <- ceiling(max(abs(range(allY))) * 1.2)
 yrange_max <- ylim
 yrange_min <- ylim * (-1)
 
-allX <- c( blackPts$x, posPts$x, negPts$x)
+allX <- c( blackPts$x)
 xrange_max <- ceiling(max(range(allX)))+1
 xrange_min <- floor(min(range(allX)))-1
 ##
 
-markerlist <- list(size=6, color='#424242', symbol=100)
+markerlist <- list(size=6, color='#2e2e2e', symbol=100)
 
 p <- plot_ly(data=blackPts, type='scatter', x=x, y=y, 
                   textposition="top right",
@@ -111,8 +113,9 @@ p <- plot_ly(data=blackPts, type='scatter', x=x, y=y,
                   marker=markerlist,  mode="markers") %>%
   layout( hovermode = 'closest',
           margin = viewer_m, 
-          xaxis = list( title="Average Expression", range= list(xrange_min, xrange_max)),
-          yaxis = list( title="", range= list(yrange_min, yrange_max)))
+          title = my.title,
+          xaxis = list( title=my.xlab, range= list(xrange_min, xrange_max)),
+          yaxis = list( title=my.ylab, range= list(yrange_min, yrange_max)))
 
 xlist <- xrange_min:xrange_max
 p <- addMAplotLineTrace_f(p, xlist=xlist, yval=2, 'grey')
@@ -120,6 +123,9 @@ p <- addMAplotLineTrace_f(p, xlist=xlist, yval=-2, 'grey')
 
 p <- addMAplotDataTrace_f(p, posPts, "top center", '#008b00')
 p <- addMAplotDataTrace_f(p, negPts, "bottom center", '#8b0000')
+#if(otherPts && nrows(otherPts) > 0) {
+#  p <- addMAplotDataTrace_f(p, otherPts, "top center", '#00008b')
+#}
 
 return (p)
 }
@@ -155,6 +161,6 @@ turnOnMAplotDataTrace_f <- function(p, traceId) {
 }
 
 ##DEBUG-IT, run standalone
-##p <- generatePlotlyMAplot_f(NULL)
+##p <- generatePlotlyMAplot_f(jlist=NULL,my.xlab="X",my.ylab="Y", my.title="ABC")
 ##print(p)
                                  

@@ -49,7 +49,8 @@ makeHeatmapData_f <- function(jlist) {
   return(hval)
 }
 
-generatePlotlyHeatmap_f <- function(jlist, distfun.row=dist, distfun.col=dist) {
+generatePlotlyHeatmap_f <- function(jlist, distfun.row=dist, distfun.col=dist,
+my.color='rg', my.xlab='log2') {
 
 pdf(NULL)
 hval <- makeHeatmapData_f(jlist)
@@ -115,17 +116,24 @@ mdf <- reshape2::melt(df, id.vars="sample")
 ## to, [1] "sample" "gene"   "value" 
 names(mdf)<-c("sample","gene","value")
 
+myLow <- '#FF0000'
+myHigh <- '#00FF00'
+if(my.color == 'gr') {
+  myHigh <- '#FF0000'
+  myLow <- '#00FF00'
+}
+
 p <- ggplot(mdf, aes(x = gene, y = sample, fill=value)) + 
 theme(axis.text.x=element_text(angle=90, hjust=1)) +
-labs(x = "", y = "", fill = "") +
+labs(x = my.xlab, y = "", fill = "") +
 theme(panel.border=element_blank()) +
-geom_tile() + scale_fill_gradient2(low = '#FF0000', mid='#000000', high = '#00FF00')
+geom_tile() + scale_fill_gradient2(low = myLow, mid='#000000', high = myHigh)
 
 # hide axis ticks and grid lines
 eaxis <- list( showticklabels = FALSE, showgrid = FALSE, zeroline = FALSE)
-p_empty <- plotly_empty() #%>% layout( xaxis = eaxis, yaxis = eaxis)
+p_empty <- plotly_empty() %>% layout( xaxis = eaxis, yaxis = eaxis)
 
-ss <- subplot(px, p_empty, p, py, nrows = 2, margin=0, 
+ss <- subplot(px, p_empty, p, py, nrows = 2, margin=0,
          shareX=TRUE, shareY=TRUE, widths=c(0.8,0.2), heights=c(0.3,0.7))  %>% 
          layout( margin = viewer_m)
 
@@ -133,5 +141,5 @@ ss <- subplot(px, p_empty, p, py, nrows = 2, margin=0,
 }
 
 ## DEBUG-IT, run standalone
-##p <- generatePlotlyHeatmap_f(NULL)
+##p <- generatePlotlyHeatmap_f(jlist=NULL, distfun.row=dist, distfun.col=dist, my.color='rg',my.xlab='log2')
 ##print(p)
