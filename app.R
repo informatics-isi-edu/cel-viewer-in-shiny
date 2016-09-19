@@ -27,7 +27,7 @@ inputCONFIG <- list( sel=c("E10.5_Mnd_D","E10.5_Mnd_P"), comp= c("place"))
 
 ui <- fluidPage(
 useShinyjs(),
-titlePanel("Gene Expression Comparison App"),
+titlePanel("Gene Expression Comparison Shiny App"),
 sidebarLayout(
   div(class = "col-sm-4",
   tags$form(class = "well",
@@ -42,11 +42,12 @@ sidebarLayout(
     conditionalPanel("output.datloaded", 
         helpText("Data is loaded."))),
   tags$form(class = "well",
-      div(tags$label("Highlight one or more genes, ")),
       bootstrapPage(
-      div(style="display:inline-block; width:100%", textInput("gene1", NULL, "name")),
-      div(style="padding-bottom:3px", "(eg. Tnnt2 Myl3 Rgs5)"))
-      ),
+        div(tags$label("Highlight one or more genes, ")),
+        div(style="display:inline-block; width:70%", textInput("gene1", NULL, "")),
+        div(style="display:inline-block", checkboxInput("highlight", "highlight", F)),    
+        div(style="padding-bottom:3px", "(eg. Myl2 Rgs5 Tnnt2)")
+      )),
 
   tags$form(class = "well",
    if (inputCONFIG$comp == "place"){ 
@@ -92,18 +93,27 @@ sidebarLayout(
 
   mainPanel(width = 8,
 
-    div(style="border:2px solid orange", plotOutput("ma.plot", height = "500px")),
+  #  div(style="border:2px solid orange", plotOutput("ma.plot", height = "500px")),
     div(style="border:2px solid blue", plotlyOutput("ma.plotly", height = "500px")),
 
-    div(style="border:2px solid green", plotOutput("heatmap", height = "450px")),
-    div(style="border:2px solid red", plotlyOutput("heatmapPlotly", height = "450px")),
+  #  div(style="border:2px solid green", plotOutput("heatmap", height = "450px")),
+  #  div(style="border:2px solid red", plotlyOutput("heatmapPlotly", height = "450px")),
 
     downloadButton("download.table", "Download table"),  br(), br(),
     dataTableOutput("table", width = "90%"))
 ) ## sidebarLayout
 )
 
+
+basicConfig()
+
+options(shiny.error = function() { 
+    logging::logerror(sys.calls() %>% as.character %>% paste(collapse = ", ")) })
+
 server <- function(input, output, session){
+
+#http://deanattali.com/blog/advanced-shiny-tips/#shinyjs
+session$onSessionEnded(stopApp)
 
 printLogJs <- function(x, ...) { 
                                logjs(x) 
@@ -135,15 +145,18 @@ addHandler(printLogJs)
 #  loginfo("here..")
 #  cat("here message\n", file=stderr())
 #  load("data/exprs.R")
+#
+# observe({
 #  query <- parseQueryString(session$clientData$url_search)
 #  if (!is.null(query[['text']])) {
-#    q <- query[['text']]
-#    updateTextInput(session, "url", value = q)
+#    updateTextInput(session, "url", value = query[['url']])
 #  }
+# })
 
-  con <- url("https://dev.facebase.org/~mei/data/urlexprs.R")
+#  con <- url("https://dev.facebase.org/~mei/data/urlexprs.R")
 #  con <- url(input$url)
-  load(con)
+#  load(con)
+  load("data/exprs.R")
   
 
   pdf(NULL)
@@ -161,6 +174,9 @@ addHandler(printLogJs)
   outputOptions(output, "datloaded", suspendWhenHidden = FALSE)
   
   output$table <- renderDataTable({
+
+#http://stackoverflow.com/questions/31920286/effectively-debugging-shiny-apps
+loginfo("I am in renderDataTable..")
     sel <- inputCONFIG$sel
     sel <- substr(sel, 2, nchar(sel))
     sel <- gsub("_", "", sel)
@@ -256,8 +272,9 @@ addHandler(printLogJs)
     if (!is.null(dat.sel$symbol))
       dat.sel$symbol[is.na(dat.sel$symbol)] <-  rownames(dat.sel)[is.na(dat.sel$symbol)]
     dat.sel$color <- "black"
-## set input$col1 to 'blue' as placeholder
-    dat.sel$color[dat.sel$symbol %in% mousecase(input$gene1) | rownames(dat.sel) %in% mousecase(input$gene1)] <- "blue" 
+## initialize that the gene1 to be empty
+    updateTextInput(session, "gene1", label="Name", value = NULL)
+
 
     lfc <- ifelse(input$log, abs(as.numeric(input$fc)), log2(abs(as.numeric(input$fc))))
     top <- topTable(efit, coef = which(colnames(design) == target.col), 
@@ -287,6 +304,10 @@ addHandler(printLogJs)
 #### HERE is when the data is now already semi-processed 
 ####
     output$ma.plotly <- renderPlotly({
+      if( !(is.null(input$gene1)) ) {
+        for( g in input$gene1)
+          dat.sel$color[dat.sel$symbol == mousecase(g) | rownames(dat.sel) == mousecase(g)] <- "blue"
+      }
       mList <-generateMAplotjson_f(ones,twos,inputCONFIG,dat.sel,dat.top) 
       my.ylab <- paste0(one,
             paste(rep(" ", ifelse(input$log, 15, 20)), collapse = ""),
