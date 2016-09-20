@@ -94,7 +94,7 @@ negPts <- hval$negPts
 otherPts <- hval$otherPts
  
 ## with alittle cushion
-allY <- c( blackPts$y)
+allY <- c( blackPts$y, posPts$y, negPts$y, otherPts$y)
 ylim <- ceiling(max(abs(range(allY))) * 1.2)
 yrange_max <- ylim
 yrange_min <- ylim * (-1)

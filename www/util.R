@@ -14,7 +14,7 @@ loadGeneDataViaURL_f <- function(inputURL) {
 generateMAplotjson_f <- function(ones,twos,inputCONFIG,dat.sel,dat.top) {
   MAINLABEL <- paste(unique(gsub("1$|2$|3$", "", c(ones, twos))), collapse = " ")
   dir <- gsub(" ", "_", MAINLABEL)
-  dir.create(dir)
+#  dir.create(dir)
 
   metaList <- list(type='maplot', config=inputCONFIG)
   blackX <- dat.sel$A[dat.sel$color == "black"]
@@ -51,7 +51,7 @@ generateMAplotjson_f <- function(ones,twos,inputCONFIG,dat.sel,dat.top) {
 generateHeatmapjson_f <- function(ones,twos,inputCONFIG,dat.top,dat.heat) {
   MAINLABEL <- paste(unique(gsub("1$|2$|3$", "", c(ones, twos))), collapse = " ")
   dir <- gsub(" ", "_", MAINLABEL)
-  dir.create(dir)
+#  dir.create(dir)
 
   SYMBOL <- dat.top$symbol
   PROBESET <- rownames(dat.heat) 
