@@ -52,7 +52,7 @@ sidebarLayout(
    } else if (inputCONFIG$comp == "age") {
      div(tags$label("Selection direction for comparing age,"))
    },
-   bootstrapPage(
+bootstrapPage(
    if (inputCONFIG$comp == "place"){ 
        radioButtons("invert_place", br(), 
            c("proximal down, distal up" = "normal",

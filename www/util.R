@@ -11,17 +11,17 @@ loadGeneDataViaURL_f <- function(inputURL) {
       if (!inherits(t, "try-error")) break}
 }
 
-generateMAplotjson_f <- function(ones,twos,inputCONFIG,dat.sel,dat.top) {
+generateMAplotjson_f <- function(ones,twos,serverCFG,dat.sel,dat.top) {
   MAINLABEL <- paste(unique(gsub("1$|2$|3$", "", c(ones, twos))), collapse = " ")
   dir <- gsub(" ", "_", MAINLABEL)
 #  dir.create(dir)
 
-  metaList <- list(type='maplot', config=inputCONFIG)
+  metaList <- list(type='maplot', config=serverCFG)
   blackX <- dat.sel$A[dat.sel$color == "black"]
   blackY <- dat.sel$M[dat.sel$color == "black"]
   blackSymbol <- dat.sel$symbol[dat.sel$color == "black"]
   blackColor <- dat.sel$color[dat.sel$color == "black"]
-  blackPtsList <- list(x=blackX, y=blackY, symbol=blackSymbol, color=blackColor)
+  blackPtsList <- list(x=blackX, y=blackY, color=blackColor, symbol=blackSymbol)
 
   otherX <- dat.sel$A[dat.sel$color != "black"]
   otherY <- dat.sel$M[dat.sel$color != "black"]
@@ -32,8 +32,8 @@ generateMAplotjson_f <- function(ones,twos,inputCONFIG,dat.sel,dat.top) {
   topX <- dat.top$A
   topY <- dat.top$M
   topSymbol <-  dat.top$symbol
-  otherColor <- dat.top$color
-  topPtsList <-list(x=topX, y=topY, symbol=topSymbol)
+  topColor <- dat.top$color
+  topPtsList <-list(x=topX, y=topY, color=topColor, symbol=topSymbol)
 
   dataList <- list(blackPts=blackPtsList)
   if( !is.null(otherX) && length(otherX) != 0) { 
@@ -43,12 +43,12 @@ generateMAplotjson_f <- function(ones,twos,inputCONFIG,dat.sel,dat.top) {
     dataList$topPts <- topPtsList
   }
   jsonList <- list(meta=metaList, data=dataList)
-  maplotfn <- paste0(dir, "/", "MAplotData.json")
+##  maplotfn <- paste0(dir, "/", "MAplotData.json")
 ##  write(toJSON(jsonList), maplotfn, append=FALSE)
   return(jsonList)
 }
 
-generateHeatmapjson_f <- function(ones,twos,inputCONFIG,dat.top,dat.heat) {
+generateHeatmapjson_f <- function(ones,twos,serverCFG,dat.top,dat.heat) {
   MAINLABEL <- paste(unique(gsub("1$|2$|3$", "", c(ones, twos))), collapse = " ")
   dir <- gsub(" ", "_", MAINLABEL)
 #  dir.create(dir)
@@ -56,7 +56,7 @@ generateHeatmapjson_f <- function(ones,twos,inputCONFIG,dat.top,dat.heat) {
   SYMBOL <- dat.top$symbol
   PROBESET <- rownames(dat.heat) 
 
-  metaList <- list(type='heatmap', config=inputCONFIG)
+  metaList <- list(type='heatmap', config=serverCFG)
   heatmapList <- list(symbol=SYMBOL, probeset=PROBESET) 
 
   sampleList.names <- colnames(dat.heat)
@@ -72,7 +72,7 @@ generateHeatmapjson_f <- function(ones,twos,inputCONFIG,dat.top,dat.heat) {
 
   heatmapList$samples <- sampleList
   jsonList <- list(meta=metaList, data=heatmapList)
-  heatmapfn <- paste0(dir, "/", "HeatmapData.json")
-#  write(toJSON(jsonList),heatmapfn, append=FALSE) 
+##  heatmapfn <- paste0(dir, "/", "HeatmapData.json")
+##  write(toJSON(jsonList),heatmapfn, append=FALSE) 
   return(jsonList)
 }

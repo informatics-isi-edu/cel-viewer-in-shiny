@@ -23,16 +23,18 @@ basicConfig()
 options(shiny.error = function() { 
     logging::logerror(sys.calls() %>% as.character %>% paste(collapse = ", ")) })
 
-inputCONFIG <- list( sel=c("E10.5_Mnd_D","E10.5_Mnd_P"), comp= c("place"))
-
 ui <- fluidPage(
 useShinyjs(),
 titlePanel("Gene Expression Comparison Shiny App"),
 sidebarLayout(
   div(class = "col-sm-4",
   tags$form(class = "well",
-#    textInput("url", "URL", NULL),
-    textInput("url", "URL", "data/exprs.R"),
+    h5("URL"),
+    verbatimTextOutput("urlText"),
+    h5("Selection"),
+    verbatimTextOutput("selText"),
+    h5("Comparison"),
+    verbatimTextOutput("compText"),
     conditionalPanel("!output.datloaded",
         helpText("Data is loading (may take a minute) ...")),
     conditionalPanel("output.datloaded", 
@@ -41,37 +43,39 @@ sidebarLayout(
    tags$form(class = "well",
        bootstrapPage(
         div(tags$label("Highlight one or more genes, ")),
-        div(style="display:inline-block; width:70%", textInput("gene1", NULL, "")),
+        div(style="display:inline-block; width:70%", textInput("gene1", NULL, NULL)),
         div(style="padding-bottom:3px", "(eg. Myl2 Rgs5 Tnnt2)")
        )),
   tags$form(class = "well",
-   if (inputCONFIG$comp == "place"){ 
-     div(tags$label("Select direction for comparing place,"))
-   } else if (inputCONFIG$comp == "bone") {
-     div(tags$label("Selection direction for comparing bone,"))
-   } else if (inputCONFIG$comp == "age") {
-     div(tags$label("Selection direction for comparing age,"))
-   },
-   bootstrapPage(
-   if (inputCONFIG$comp == "place"){ 
-       radioButtons("invert_place", br(), 
-           c("proximal down, distal up" = "normal",
-             "distal down, proximal up" = "inverted"), "normal", inline = T)
-   } else if (inputCONFIG$comp == "bone") {
-       radioButtons("invert_bone", br(), 
+    conditionalPanel("output.comp == 'place'",
+     div(tags$label("Select direction for comparing place,"))),
+    conditionalPanel("output.comp == 'bone'",
+     div(tags$label("Select direction for comparing bone,"))),
+    conditionalPanel("output.comp == 'age'",
+     div(tags$label("Select direction for comparing age,"))),
+  bootstrapPage(
+    conditionalPanel("output.comp == 'place'",
+     radioButtons("invert_place", br(), 
+         c("proximal down, distal up" = "normal",
+           "distal down, proximal up" = "inverted"), "normal", inline = T)
+    ),
+    conditionalPanel("output.comp == 'bone'",
+       radioButtons("invert_bone", br(),
            c("mandible down, maxilla up" = "normal",
              "maxilla down, mandible up" = "inverted"), "normal", inline = T)
-   } else if (inputCONFIG$comp == "age") {
-       radioButtons("invert_age", br(),
+    ),
+    conditionalPanel("output.comp == 'age'",
+       radioButtons("invert_age", br(), 
            c("earliest down, latest up" = "normal",
              "latest down, earliest up" = "inverted"), "normal", inline = T)
-   }),
+    )
+   ),
    conditionalPanel("output.numsel > 6",
        checkboxInput("heatadjust", "For heatmap, factor out comparisons other than the one selected", value = T))),
   tags$form(class= "well",
       bootstrapPage(
       div(style="display:inline-block; width:30%", textInput("fc", "Fold change cut-off", 2)),
-        div(style="display:inline-block", checkboxInput("log", "log2", T))),    
+        div(style="display:inline-block", checkboxInput("log", "log2", T))),
     textInput("fdr", "False discovery rate", 0.01, width = "30%"),
     textInput("max", "Max. DE genes/probesets", Inf, width = "30%"),
     radioButtons("summary", "For each gene, show",
@@ -88,11 +92,9 @@ sidebarLayout(
 
   mainPanel(width = 8,
 
-  #  div(style="border:2px solid orange", plotOutput("ma.plot", height = "500px")),
     div(style="border:2px solid blue", plotlyOutput("ma.plotly", height = "500px")),
 
-  #  div(style="border:2px solid green", plotOutput("heatmap", height = "450px")),
-    div(style="border:2px solid red", plotlyOutput("heatmapPlotly", height = "450px")),
+    div(style="border:2px solid blue", plotlyOutput("heatmapPlotly", height = "450px")),
 
     downloadButton("download.table", "Download table"),  br(), br(),
     DT::dataTableOutput("table", width = "90%"))
@@ -100,14 +102,11 @@ sidebarLayout(
 )
 
 
-basicConfig()
-
-options(shiny.error = function() { 
-    logging::logerror(sys.calls() %>% as.character %>% paste(collapse = ", ")) })
-
 server <- function(input, output, session){
 
+
 #http://deanattali.com/blog/advanced-shiny-tips/#shinyjs
+
 session$onSessionEnded(stopApp)
 
 printLogJs <- function(x, ...) { 
@@ -116,60 +115,19 @@ printLogJs <- function(x, ...) {
                                }
 addHandler(printLogJs)
 
+  pdf(NULL)
+
 ## process args that were passed in via url
 
 ##https://dev.facebase.org/shiny/apps/url/?url=hello-world
 ##
 ##https://dev.facebase.org/shiny/apps/usc/?url=https://dev.facebase.org/~mei/data/urlexprs.R
-  source("www/old_util.R")
   source("www/util.R")
+  source("www/old_util.R")
   source("www/heatmap_util.R")
   source("www/maplot_util.R")
 
   load("data/jaws3.R")
-
-#  load("data/exprs.R")
-#  repeat{
-#      con <- url(input$url)
-#      con <- input$url
-#      if( con != "data/exprs.R") {
-#        load("data/exprs.R")
-#      }
-#  if (!inherits(t, "try-error")) break}
-#  myurl <- input$url
-#  loginfo("here..")
-#  cat("here message\n", file=stderr())
-#  load("data/exprs.R")
-#
-    observe({
-      query <- parseQueryString(session$clientData$url_search)
-      if (!is.null(query[['url']])) {
-        q <- query[['url']]
-        updateTextInput(session, "url", value = query[['url']])
-      }
-    })
-
-#  con <- url("https://dev.facebase.org/~mei/data/urlexprs.R")
-#  con <- url(input$url)
-#  load(con)
-
- load("data/exprs.R")
-
-#  output$dat <- renderText({
-#loginfo(c(reactive({ input$url})))
-#     isNnull <- reactive({ isNnull <- is.null(input$url)})
-#loginfo("XXX")
-#loginfo(c(isNnull))
-#loginfo(typeof(isNnull))
-#     if( c(isNnull) == TRUE) {
-#loginfo("I am in renderText..")
-#         con <- reactive({ con <- url(input$url) })
-#         load(con)
-#         output$datloaded <- reactive(is.numeric(nrow(dat)))
-#         outputOptions(output, "datloaded", suspendWhenHidden = FALSE)
-#  }) 
-  
-  pdf(NULL)
 
   age <- factor(rep(c(10.5, 11.5, 12.5, 13.5, 14.5), each = 12))
   bone <- factor(rep(rep(c("Max", "Mnd"), each = 6), 5))
@@ -177,22 +135,62 @@ addHandler(printLogJs)
   full.design <- model.matrix(~age + bone + place)
   rownames(full.design) <- paste0(age, bone, place, 1:3)
 
+serverCFG <- list( sel=c("E10.5_Mnd_D","E10.5_Mnd_P"), comp= c("place"), url= NULL)
+
+## process input config part
+observe ({
+  query <- parseQueryString(session$clientData$url_search)
+  if (!is.null(query[['url']])) {
+    serverCFG$url <- query[['url']]
+  } 
+
+  if (!is.null(query[['sel']]))  {
+# start with "E10.5_Mnd_D E10.5_Mnd_P"
+# into  "E10.5_Mnd_D" "E10.5_Mnd_P"
+    s <- query[['sel']]
+    s <- gsub("\"", "", s)
+    ss <- strsplit(s," ")
+    ss <- ss[[1]]
+    t <- character()
+    for(s in ss) t <- c(t, s)
+    serverCFG$sel <- t
+    output$selText <- renderText({
+      paste0(serverCFG$sel)
+    })
+  }
+
+  if (!is.null(query[['comp']])) { 
+    s <- query[['comp']]
+    s <- gsub("\"", "", s)
+    serverCFG$comp <- s
+    output$comp <- reactive(s)
+    outputOptions(output, "comp", suspendWhenHidden = FALSE)
+    output$compText <- renderText({
+      paste0(serverCFG$comp)
+    })
+  }
+  
+  output$urlText <- renderText({
+    paste0(serverCFG$url)
+  })
+
+  con <- url(serverCFG$url)
+  load(con)
+
   rownames(dat) <- dat[, "probeset"]
   genes.tab <- xtabs(~unlist(dat$symbol))
   single.genes <- names(genes.tab)[genes.tab == 1]
   output$datloaded <- reactive(is.numeric(nrow(dat)))
   outputOptions(output, "datloaded", suspendWhenHidden = FALSE)
   
-  output$table <- DT::renderDataTable({
-
 #http://stackoverflow.com/questions/31920286/effectively-debugging-shiny-apps
-loginfo("I am in renderDataTable..")
-    sel <- inputCONFIG$sel
+  output$table <- DT::renderDataTable({
+    sel <- serverCFG$sel
     sel <- substr(sel, 2, nchar(sel))
     sel <- gsub("_", "", sel)
     sels <- character()
     for (s in sel) sels <- c(sels, paste0(s, 1:3))
-    if (inputCONFIG$comp == "place"){ 
+    if (serverCFG$comp == "place"){ 
       target.col <- "placeD"
       ones <- grep("P", sels, value = T)
       twos <- grep("D", sels, value = T)
@@ -203,7 +201,7 @@ loginfo("I am in renderDataTable..")
       invert <- ifelse(input$invert_place == "inverted", T, F)
       one <- ifelse(invert, "distal", "proximal")
       two <- ifelse(invert, "proximal", "distal")}
-    if (inputCONFIG$comp == "bone"){
+    if (serverCFG$comp == "bone"){
       target.col <- "boneMnd"
       ones <- grep("Max", sels, value = T)
       twos <- grep("Mnd", sels, value = T)
@@ -217,7 +215,7 @@ loginfo("I am in renderDataTable..")
     ages <- unique(substr(sels, 1, 4))
     if (length(ages)) age.1 <- min(ages) else age.1 <- 10.5
     young.col <- paste0("age", age.1)
-    if (inputCONFIG$comp == "age"){
+    if (serverCFG$comp == "age"){
       age.2 <- max(ages)
       target.col <- paste0("age", age.2)
       ones <- grep(age.1, sels, value = T)
@@ -240,8 +238,8 @@ loginfo("I am in renderDataTable..")
     control <- data.frame(lapply(control.cols, function(x){col <- list(full.des[, x])}))
     names(control) <- control.cols
     if (!nrow(design) | !target.col %in% colnames(design) | !all(sels %in% c(ones, twos))) return({
-      output$ma.plot <- renderPlot(plot.null())
-      output$heatmap <- renderPlot(plot.null())
+      output$ma.plotly <- renderPlotly(plot.null())
+      output$heatmapPloty <- renderPlotly(plot.null())
       data.frame(NULL)})
     output$numsel <- reactive(length(c(ones, twos)))  
     outputOptions(output, "numsel", suspendWhenHidden = FALSE)
@@ -283,10 +281,11 @@ loginfo("I am in renderDataTable..")
       dat.sel$symbol[is.na(dat.sel$symbol)] <-  rownames(dat.sel)[is.na(dat.sel$symbol)]
     dat.sel$color <- "black"
 ## initialize that the gene1 to be empty
-    if( !(is.null(input$gene1)) ) {
-      for (g in input$gene1) {
-        dat.sel$color[dat.sel$symbol == mousecase(g)] <- "blue"
-#        dat.sel$color[dat.sel$symbol == mousecase(g) | rownames(dat.sel) == mousecase(g)] <- "blue"
+    gene1 <- c(strsplit(input$gene1," "))
+    gene1 <- gene1[[1]]
+    if( !(is.null(gene1)) ) {
+      for (g in gene1) {
+        dat.sel$color[dat.sel$symbol == mousecase(g) | rownames(dat.sel) == mousecase(g)] <- "blue"
       }
     }
 
@@ -318,98 +317,16 @@ loginfo("I am in renderDataTable..")
 #### HERE is when the data is now already semi-processed 
 ####
     output$ma.plotly <- renderPlotly({
-      mList <-generateMAplotjson_f(ones,twos,inputCONFIG,dat.sel,dat.top) 
-      my.ylab <- paste0(one,
+        mList <-generateMAplotjson_f(ones,twos,serverCFG,dat.sel,dat.top) 
+        my.ylab <- paste0(one,
             paste(rep(" ", ifelse(input$log, 15, 20)), collapse = ""),
             ifelse(input$log, "Log2 Fold Change", "Fold Change"),
             paste(rep(" ", ifelse(input$log, 15, 20)), collapse = ""), two)
-      my.xlab <- "Average Expression"
-      my.title <- paste(unique(gsub("1$|2$|3$", "", c(ones, twos))), collapse = " ") 
+        my.xlab <- "Average Expression"
+        my.title <- paste(unique(gsub("1$|2$|3$", "", c(ones, twos))), collapse = " ") 
       generatePlotlyMAplot_f(mList,my.xlab,my.ylab,my.title)
     })
 
-    output$ma.plot <- renderPlot({
-      ma.plot <- function(){
-        par(mar = c(5, 5, 5, 8))
-        lim <- max(abs(range(dat.sel$M)))
-
-        plot(NULL, cex = 0.9,
-          xaxt = "n", yaxt = "n",
-          xlab = "Average Expression",
-          xlim = range(dat.sel$A),
-          ylim = c(-lim * 1.05, lim * 1.05), 
-          ylab = paste0(one,
-            paste(rep(" ", ifelse(input$log, 15, 20)), collapse = ""),
-            ifelse(input$log, "Log2 Fold Change", "Fold Change"),
-            paste(rep(" ", ifelse(input$log, 15, 20)), collapse = ""), two),
-          cex.lab = 1.2, font.main = 1, cex.main = 1.2,
-          main = paste(unique(gsub("1$|2$|3$", "", c(ones, twos))), collapse = " "))
-        points(dat.sel$A[dat.sel$color == "black"], dat.sel$M[dat.sel$color == "black"], pch = 21, cex = 0.9)
-        points(dat.sel$A[dat.sel$color != "black"], dat.sel$M[dat.sel$color != "black"], pch = 21, cex = 0.9,
-          col = dat.sel$color[dat.sel$color != "black"])
-        if (nrow(dat.top)){
-          points(dat.top$A, dat.top$M, pch = 21, cex = 0.9, col = dat.top$color, bg = dat.top$color)
-          text(dat.top$A, dat.top$M, dat.top$symbol, col = dat.top$color, 
-            pos = ifelse(dat.top$M > 0, 3, 1), offset = 0.4, cex = 0.9)}
-        ats.0 <- seq(1, 9, 1)
-        ats <- c(-1 * rev(ats.0), 0, ats.0)
-        log.labs <- ats
-        log.labs[log.labs > 0] <- paste0("+", log.labs[log.labs > 0])
-        raw.labs <- 2 ^ ats
-        raw.labs[raw.labs < 1] <- -1 / raw.labs[raw.labs < 1]
-        raw.labs[raw.labs > 1] <- paste0("+", raw.labs[raw.labs > 1])
-        axis(1, seq(0, 20, 1))
-        if (input$log) axis(2, ats, log.labs)
-        else axis(2, ats, raw.labs, cex.axis = ifelse(lim > 6, 0.75, 1))
-        abline(h = lfc * c(-1, 1), lty = 2)}
-      ma.plot()
-    })
-      
-    output$heatmap <- renderPlot({
-      heatmap <- function(){
-      withProgress({
-        if (nrow(dat.top) < 2) return(plot.null())
-        dat.heat <- as.matrix(dat.top[, sels])
-        dat.heat <- dat.heat - mean(dat.heat)
-        if (input$heatadjust){
-          for (col in colnames(control)[colnames(control) != "(Intercept)"]){
-            for (v in unique(control[, col])){
-              mm <- mean(dat.heat[, rownames(control)[control[, col] == v]])
-              dat.heat[, rownames(control)[control[, col] == v]] <- 
-                dat.heat[, rownames(control)[control[, col] == v]] - mm}}}
-        if (input$heatscale %in% c("MC", "Z")) dat.heat <- sweep(dat.heat, 1, rowMeans(dat.heat))
-        if (input$heatscale == "Z") dat.heat <- sweep(dat.heat, 1, apply(dat.heat, 1, sd), "/")
-        weights <- (ncol(dat.heat):1) + 10000
-        weights[colnames(dat.heat) %in% twos] <- 
-          weights[colnames(dat.heat) %in% twos] + ifelse(xor(invert, inputCONFIG$comp == "bone"), -100, 100)
-        extreme <- ceiling(10 *  max(dat.heat)) / 10
-
-        heatmap.22(t(dat.heat),
-          Rowv = as.integer(weights),
-          col = ifelse(input$heatcol == "rg", redgreen, greenred),
-          cexCol = min(1.5, 0.2 + 1/log10(nrow(dat.heat))),
-          scale = "none", key = T, key.title = NA, lwid = c(1, 4), lhei = c(1.5, 4),
-          density.info = "density", densadj = 0.5, denscol = "white",
-          key.ylab = NA, key.xlab = ifelse(input$log, "Log2 Fold Change", "Fold Change"),
-          key.par = list(cex.lab = 1.25, cex.axis = 1, tcl = -0.35, mgp = c(2, 1, 0)),
-          key.ytickfun = function() list(labels = F, tick = F),
-          key.xtickfun = function(){
-            breaks <- parent.frame()$breaks
-            list(at = c(0, 0.2, 0.4, 0.6, 0.8, 1),
-               labels = round(seq(-extreme, extreme, length = 6), 1), 
-               padj = -0.25)},
-          trace = "none", margins = c(5, 10),
-
-          distfun.row = dist,
-          distfun.col = function(...) {
-            if (input$distfun == "E") return(dist(...))
-            if (input$distfun == "AC") return(cor.dist(..., abs = T))
-            if (input$distfun == "C") return(cor.dist(..., abs = F))},
-          labCol = dat.top$symbol, colCol = dat.top$color)
-      incProgress(1)}, value = NULL, message = "Calculations in progress...")}
-      heatmap()
-    })
-      
     output$heatmapPlotly <- renderPlotly({
         if (nrow(dat.top) < 2) return(plot.null())
         dat.heat <- as.matrix(dat.top[, sels])
@@ -424,7 +341,7 @@ loginfo("I am in renderDataTable..")
         if (input$heatscale == "Z") dat.heat <- sweep(dat.heat, 1, apply(dat.heat, 1, sd), "/")
         weights <- (ncol(dat.heat):1) + 10000
         weights[colnames(dat.heat) %in% twos] <-
-          weights[colnames(dat.heat) %in% twos] + ifelse(xor(invert, inputCONFIG$comp == "bone"), -100, 100)
+          weights[colnames(dat.heat) %in% twos] + ifelse(xor(invert, serverCFG$comp == "bone"), -100, 100)
         extreme <- ceiling(10 *  max(dat.heat)) / 10
 
 ## row are genes and col are samples
@@ -436,7 +353,7 @@ loginfo("I am in renderDataTable..")
       }
       my.color <- input$heatcol 
       my.xlab <- ifelse(input$log, "Log2 Fold Change", "Fold Change")
-      hList <-generateHeatmapjson_f(ones,twos,inputCONFIG,dat.top,dat.heat) 
+      hList <-generateHeatmapjson_f(ones,twos,serverCFG,dat.top,dat.heat) 
       generatePlotlyHeatmap_f(hList, distfun.row, distfun.col,my.color,my.xlab)
     })
 
@@ -449,6 +366,7 @@ loginfo("I am in renderDataTable..")
         c(0, "blue"),
         c("white", "blue")))
   })
+  }) ## outermost observe
     
 }
     

@@ -122,10 +122,12 @@ p <- addMAplotLineTrace_f(p, xlist=xlist, yval=2, 'grey')
 p <- addMAplotLineTrace_f(p, xlist=xlist, yval=-2, 'grey')
 
 if( ! is.null(otherPts) ) {
+  p <- addMAplotDataTrace_f(p, posPts, "top center", '#008b00')
+  p <- addMAplotDataTrace_f(p, negPts, "top center", '#8b0000')
   p <- addMAplotDataTrace_f(p, otherPts, "top center", '#00FFFF')
-} else {
-p <- addMAplotDataTrace_f(p, posPts, "top center", '#008b00')
-p <- addMAplotDataTrace_f(p, negPts, "bottom center", '#8b0000')
+  } else {
+    p <- addMAplotDataTrace_f(p, posPts, "top center", '#008b00')
+    p <- addMAplotDataTrace_f(p, negPts, "bottom center", '#8b0000')
 }
 
 return (p)
@@ -152,13 +154,6 @@ addMAplotLineTrace_f <- function(p, xlist, yval, nColor) {
         showlegend = FALSE,
         mode="lines")
   return(q)
-}
-
-turnOffMAplotDataTrace_f <- function(p, traceId) {
-##
-}
-turnOnMAplotDataTrace_f <- function(p, traceId) {
-##
 }
 
 ##DEBUG-IT, run standalone
