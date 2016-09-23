@@ -109,6 +109,7 @@ markerlist <- list(size=6, color='#2e2e2e', symbol=100)
 p <- plot_ly(data=blackPts, type='scatter', x=x, y=y, 
                   textposition="top right",
                   text=symbol,
+                  hoverinfo="x+y+text",
                   showlegend = FALSE,
                   marker=markerlist,  mode="markers") %>%
   layout( hovermode = 'closest',
@@ -141,6 +142,7 @@ addMAplotDataTrace_f <- function(p, nPts, nPos, nColor) {
                   textposition=nPos,
                   showlegend = FALSE,
                   text=symbol,
+                  hoverinfo="x+y+text",
                   marker=markerlist,  mode="text+markers")
   return(q)
 }
