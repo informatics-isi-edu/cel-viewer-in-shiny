@@ -1,10 +1,7 @@
+eontime <-Sys.time()
 library(bioDist)
-library(gplots)
-library(gtools)
 library(limma)
 library(DT)
-library(png)
-library(plotrix)
 library(plyr)
 
 library(plotly)
@@ -23,7 +20,9 @@ basicConfig()
 options(shiny.error = function() { 
     logging::logerror(sys.calls() %>% as.character %>% paste(collapse = ", ")) })
 
-ui <- fluidPage(
+eon2time <-Sys.time()
+
+ui <- fluidPage( 
 useShinyjs(),
 titlePanel("Gene Expression Comparison Shiny App"),
 sidebarLayout(
@@ -35,6 +34,20 @@ sidebarLayout(
     verbatimTextOutput("selText"),
     h5("Comparison"),
     verbatimTextOutput("compText"),
+h5("LoadTime"),
+verbatimTextOutput("loadTimeText"),
+h5("eonTime"),
+verbatimTextOutput("eonTimeText"),
+h5("eon2Time"),
+verbatimTextOutput("eon2TimeText"),
+h5("beginTime"),
+verbatimTextOutput("beginTimeText"),
+h5("startTime"),
+verbatimTextOutput("startTimeText"),
+h5("preloadTime"),
+verbatimTextOutput("preloadTimeText"),
+h5("endTime"),
+verbatimTextOutput("endTimeText"),
     conditionalPanel("!output.datloaded",
         helpText("Data is loading (may take a minute) ...")),
     conditionalPanel("output.datloaded", 
@@ -103,6 +116,8 @@ sidebarLayout(
 
 
 server <- function(input, output, session){
+begintime <- Sys.time()
+output$beginTimeText <- renderText({ paste0(begintime) })
 
 
 #http://deanattali.com/blog/advanced-shiny-tips/#shinyjs
@@ -115,7 +130,7 @@ printLogJs <- function(x, ...) {
                                }
 addHandler(printLogJs)
 
-  pdf(NULL)
+pdf(NULL)
 
 ## process args that were passed in via url
 
@@ -127,8 +142,6 @@ addHandler(printLogJs)
   source("www/heatmap_util.R")
   source("www/maplot_util.R")
 
-  load("data/jaws3.R")
-
   age <- factor(rep(c(10.5, 11.5, 12.5, 13.5, 14.5), each = 12))
   bone <- factor(rep(rep(c("Max", "Mnd"), each = 6), 5))
   place <- relevel(factor(rep(rep(c("D", "P"), each = 3), 10)), "P")
@@ -137,12 +150,27 @@ addHandler(printLogJs)
 
 serverCFG <- list( sel=c("E10.5_Mnd_D","E10.5_Mnd_P"), comp= c("place"), url= NULL)
 
+  processForData = reactive( {
+
 ## process input config part
-observe ({
-  query <- parseQueryString(session$clientData$url_search)
+starttime <- Sys.time()
+output$startTimeText <- renderText({ paste0(starttime) })
+
+  query<- parseQueryString(session$clientData$url_search)
+
   if (!is.null(query[['url']])) {
+    loginfo("AAA 1")
     serverCFG$url <- query[['url']]
+    output$urlText <- renderText({ paste0(serverCFG$url) })
+    con <- url(serverCFG$url)
+
+    preloadtime <- Sys.time()
+output$preloadTimeText <- renderText({ paste0(preloadtime) })
+    loadtime <- system.time(load(con))
+output$loadTimeText <- renderText({ paste0(loadtime) })
+    loginfo("AAA 2")
   } 
+  loginfo("AAA 3")
 
   if (!is.null(query[['sel']]))  {
 # start with "E10.5_Mnd_D E10.5_Mnd_P"
@@ -154,37 +182,37 @@ observe ({
     t <- character()
     for(s in ss) t <- c(t, s)
     serverCFG$sel <- t
-    output$selText <- renderText({
-      paste0(serverCFG$sel)
-    })
+    output$selText <- renderText({ paste0(serverCFG$sel) })
   }
+  loginfo("AAA 4")
 
   if (!is.null(query[['comp']])) { 
     s <- query[['comp']]
     s <- gsub("\"", "", s)
     serverCFG$comp <- s
-    output$comp <- reactive(s)
-    outputOptions(output, "comp", suspendWhenHidden = FALSE)
-    output$compText <- renderText({
-      paste0(serverCFG$comp)
-    })
+    output$compText <- renderText({ paste0(serverCFG$comp) })
   }
-  
-  output$urlText <- renderText({
-    paste0(serverCFG$url)
+  loginfo("AAA 5")
+  dat
   })
-
-  con <- url(serverCFG$url)
-  load(con)
+  loginfo("AAA 6")
+  dat <- isolate(processForData())
+  loginfo("AAA 7")
 
   rownames(dat) <- dat[, "probeset"]
   genes.tab <- xtabs(~unlist(dat$symbol))
   single.genes <- names(genes.tab)[genes.tab == 1]
+
   output$datloaded <- reactive(is.numeric(nrow(dat)))
   outputOptions(output, "datloaded", suspendWhenHidden = FALSE)
+  output$comp <- reactive(serverCFG$comp)
+  outputOptions(output, "comp", suspendWhenHidden = FALSE)
+
+  loginfo("AAA 8")
   
 #http://stackoverflow.com/questions/31920286/effectively-debugging-shiny-apps
   output$table <- DT::renderDataTable({
+    loginfo("XXX renderDataTAble")
     sel <- serverCFG$sel
     sel <- substr(sel, 2, nchar(sel))
     sel <- gsub("_", "", sel)
@@ -290,13 +318,18 @@ observe ({
     }
 
     lfc <- ifelse(input$log, abs(as.numeric(input$fc)), log2(abs(as.numeric(input$fc))))
+
     top <- topTable(efit, coef = which(colnames(design) == target.col), 
       lfc = lfc, p.value = as.numeric(input$fdr), num = Inf)
     top <- merge(top, dat[, c("probeset", "symbol", "desc")], by.x = 0, by.y = "probeset")
     top.colored <- top[rownames(top) %in% dat.sel$probeset[dat.sel$color != "black"], ]
+## only take the max into account if there is a highlighted/colored top entry
     if (nrow(top.colored)){
+loginfo("BBB")
       top.black <- top[1:min(nrow(top), as.numeric(input$max)), ]
       top <- merge(top.colored, top.black, all = T)}
+loginfo("CCC")
+loginfo(nrow(top))
     if (nrow(top)){
       if (invert) top$logFC <- -top$logFC      
       top <- top[order(top$logFC, decreasing = T), ]
@@ -317,6 +350,7 @@ observe ({
 #### HERE is when the data is now already semi-processed 
 ####
     output$ma.plotly <- renderPlotly({
+        loginfo("XXX ma.plotly")
         mList <-generateMAplotjson_f(ones,twos,serverCFG,dat.sel,dat.top) 
         my.ylab <- paste0(one,
             paste(rep(" ", ifelse(input$log, 15, 20)), collapse = ""),
@@ -324,10 +358,12 @@ observe ({
             paste(rep(" ", ifelse(input$log, 15, 20)), collapse = ""), two)
         my.xlab <- "Average Expression"
         my.title <- paste(unique(gsub("1$|2$|3$", "", c(ones, twos))), collapse = " ") 
-      generatePlotlyMAplot_f(mList,my.xlab,my.ylab,my.title)
+        my.lfc <- lfc
+      generatePlotlyMAplot_f(mList,my.xlab,my.ylab,my.title,my.lfc)
     })
 
     output$heatmapPlotly <- renderPlotly({
+        loginfo("XXX heatmap")
         if (nrow(dat.top) < 2) return(plot.null())
         dat.heat <- as.matrix(dat.top[, sels])
         dat.heat <- dat.heat - mean(dat.heat)
@@ -366,7 +402,13 @@ observe ({
         c(0, "blue"),
         c("white", "blue")))
   })
-  }) ## outermost observe
+
+endtime <- Sys.time()
+output$endTimeText <- renderText({ paste0(endtime) })
+
+output$eonTimeText <- renderText({ paste0(eontime) })
+output$eon2TimeText <- renderText({ paste0(eon2time) })
+#  }) ## outermost observe
     
 }
     

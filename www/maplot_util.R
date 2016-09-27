@@ -74,7 +74,7 @@ makeMAplotData_f <- function(jlist) {
 #
 #  GenesTrace=3; // 0=blackPts, 1=line(2), 2=line(-2) 3=posPts, 4=negPts, 5=special
 #
-generatePlotlyMAplot_f <- function(jlist,my.xlab,my.ylab,my.title) {
+generatePlotlyMAplot_f <- function(jlist,my.xlab,my.ylab,my.title,my.lfc) {
 
 viewer_m <- list(
   l = 100,
@@ -100,15 +100,22 @@ yrange_max <- ylim
 yrange_min <- ylim * (-1)
 
 allX <- c( blackPts$x)
+cntBlacks <- ceiling(length(allX) * 0.1)
 xrange_max <- ceiling(max(range(allX)))+1
 xrange_min <- floor(min(range(allX)))-1
 ##
 
 markerlist <- list(size=6, color='#2e2e2e', symbol=100)
 
-p <- plot_ly(data=blackPts, type='scatter', x=x, y=y, 
+blacks <- c()
+blacks$x <- head(blackPts$x,cntBlacks)
+blacks$y <- head(blackPts$y,cntBlacks)
+blacks$symbol <- head(blackPts$symbol,cntBlacks)
+
+p <- plot_ly(data=blacks, type='scatter', x=x, y=y, 
                   textposition="top right",
                   text=symbol,
+                  hoverinfo="x+y+text",
                   showlegend = FALSE,
                   marker=markerlist,  mode="markers") %>%
   layout( hovermode = 'closest',
@@ -118,8 +125,8 @@ p <- plot_ly(data=blackPts, type='scatter', x=x, y=y,
           yaxis = list( title=my.ylab, range= list(yrange_min, yrange_max)))
 
 xlist <- xrange_min:xrange_max
-p <- addMAplotLineTrace_f(p, xlist=xlist, yval=2, 'grey')
-p <- addMAplotLineTrace_f(p, xlist=xlist, yval=-2, 'grey')
+p <- addMAplotLineTrace_f(p, xlist=xlist, yval=my.lfc, 'grey')
+p <- addMAplotLineTrace_f(p, xlist=xlist, yval=(-1 *my.lfc), 'grey')
 
 if( ! is.null(otherPts) ) {
   p <- addMAplotDataTrace_f(p, posPts, "top center", '#008b00')
@@ -141,6 +148,7 @@ addMAplotDataTrace_f <- function(p, nPts, nPos, nColor) {
                   textposition=nPos,
                   showlegend = FALSE,
                   text=symbol,
+                  hoverinfo="x+y+text",
                   marker=markerlist,  mode="text+markers")
   return(q)
 }
