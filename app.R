@@ -281,7 +281,7 @@ output$loadTimeText <- renderText({ paste0(loadtime) })
       dat.sel <- dat.sel[dat.sel$symbol != "NA", ]
       rownames(dat.sel) <- dat$probeset[match(dat.sel$symbol, dat$symbol)]}
     if (input$summary == "A"){
-      dat.sel$A <- rowMeans(dat.sel)
+      dat.sel$A <- rowMeans(dat.sel[, c(ones,twos)])
       dat.sel$P <- rownames(dat.sel)
       dat.single <- dat.sel[dat.sel$symbol %in% single.genes, ]
       dat.multiple <- dat.sel[!dat.sel$symbol %in% single.genes, ]
@@ -408,7 +408,6 @@ output$endTimeText <- renderText({ paste0(endtime) })
 
 output$eonTimeText <- renderText({ paste0(eontime) })
 output$eon2TimeText <- renderText({ paste0(eon2time) })
-#  }) ## outermost observe
     
 }
     
