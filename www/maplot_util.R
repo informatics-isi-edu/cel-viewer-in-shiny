@@ -74,7 +74,7 @@ makeMAplotData_f <- function(jlist) {
 #
 #  GenesTrace=3; // 0=blackPts, 1=line(2), 2=line(-2) 3=posPts, 4=negPts, 5=special
 #
-generatePlotlyMAplot_f <- function(jlist,my.xlab,my.ylab,my.title,my.lfc) {
+generatePlotlyMAplot_f <- function(jlist,my.xlab,my.ylab,my.title,my.lfc, my.bkPts) {
 
 viewer_m <- list(
   l = 100,
@@ -100,7 +100,7 @@ yrange_max <- ylim
 yrange_min <- ylim * (-1)
 
 allX <- c( blackPts$x)
-cntBlacks <- ceiling(length(allX) * 0.1)
+cntBlacks <- ceiling(length(allX) * (my.bkPts/100)) 
 xrange_max <- ceiling(max(range(allX)))+1
 xrange_min <- floor(min(range(allX)))-1
 ##

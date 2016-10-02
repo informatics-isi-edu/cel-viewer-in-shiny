@@ -51,6 +51,7 @@ verbatimTextOutput("loadTimeText"),
     bootstrapPage(
       div(style="display:inline-block; width:70%", textInput("gene1", "Highlight one or more genes,", NULL)),
       div(style="display:inline-block;", checkboxInput("go", "go", F)),
+#      div(style="display:inline-block;", actionButton(inputId="go", label="on")),
       div(style="padding-bottom:3px", "(eg. Myl2 Rgs5 Tnnt2)")
   )),
   tags$form(class = "well",
@@ -74,7 +75,7 @@ verbatimTextOutput("loadTimeText"),
             "latest down, earliest up" = "inverted"), "normal", inline = T)
       ),
       conditionalPanel("output.numsel > 6",
-        checkboxInput("heatadjust", "For heatmap, factor out comparisons other than the one selected", T)
+        checkboxInput("heatadjust", "For heatmap, factor out comparisons other than the one selected", value = T)
       )
   )),
   tags$form(class= "well",
@@ -99,15 +100,14 @@ verbatimTextOutput("loadTimeText"),
         choices = c("Euclidean distance" = "E", "absolute correlation" = "AC",
                     "correlation" = "C"), selected = "E", inline = T),
       radioButtons("heatscale", "For heatmap, scale genes by",
-        choices = c("Z-score" = "Z", "mean-centering" = "MC", "none" = "N"),
-                                           selected = "Z", inline = T)
+        choices = c( "none" = "N", "mean-centering" = "MC", "Z-score" = "Z"),
+                                         selected = "Z", inline = T)
   ))),
   mainPanel(width = 8,
 
-    plotlyOutput("ma.plotly", height = "500px"),
-    plotlyOutput("heatmapPlotly", height = "450px"),
-#div(style="border:2px solid blue", plotlyOutput("ma.plotly", height = "500px")),
-#div(style="border:2px solid blue", plotlyOutput("heatmapPlotly", height = "450px")),
+div(style="border:2px solid blue", plotlyOutput("ma.plotly", height = "500px")),
+div(style="border:2px solid blue", plotlyOutput("heatmapPlotly", height = "450px")),
+
     downloadButton("download.table", "Download table"),  br(), br(),
     DT::dataTableOutput("table", width = "90%")
   )
@@ -171,7 +171,6 @@ output$loadTimeText <- renderText({ paste0(loadtime) })
 
     ones <- serverCFG$ones
     twos <- serverCFG$twos
-
     output$numsel <- reactive(length(c(ones, twos)))
     outputOptions(output, "numsel", suspendWhenHidden = FALSE)
 
@@ -299,6 +298,7 @@ loginfo("XXX heatmap")
     dat.top <- tlist$dd
     plist <- isolate(createDesignControl())
     control <- plist$cc
+    
 ###
     if (nrow(dat.top) < 2) return(plot.null())
 
