@@ -1,3 +1,9 @@
+
+
+###
+### to run, http://dev.facebase.org:3838/apps/usc-test/?url=https://dev.facebase.org/~mei/data/Place_10.5MndD_10.5MndP_exprs.R&comp=place&sel="E10.5_Mnd_D E10.5_Mnd_P"
+###
+
 library(bioDist)
 library(limma)
 library(DT)
@@ -6,26 +12,13 @@ library(plyr)
 library(plotly)
 
 library(shiny)
-options(shiny.trace = TRUE)
-options(shiny.fullstacktrace = TRUE)
-options(shiny.error=traceback)
-
-library(magrittr)
-library(shinyjs)
-library(logging)
-
-basicConfig()
-
 options(shiny.error = function() { 
     logging::logerror(sys.calls() %>% as.character %>% paste(collapse = ", ")) })
 
 ### https://datatables.net/manual/tech-notes/7
 ### $.fn.dataTable.ext.errMode = 'throw';
 
-eontime <-Sys.time()
-
 ui <- fluidPage( 
-useShinyjs(),
 titlePanel("Gene Expression Comparison Shiny App"),
 sidebarLayout(
   div(class = "col-sm-4",
@@ -36,12 +29,6 @@ sidebarLayout(
     verbatimTextOutput("selText"),
     h5("Comparison"),
     verbatimTextOutput("compText"),
-h5("eonTime"),
-verbatimTextOutput("eonTimeText"),
-h5("beginTime"),
-verbatimTextOutput("beginTimeText"),
-h5("LoadTime"),
-verbatimTextOutput("loadTimeText"),
     conditionalPanel("!output.datloaded",
         helpText("Data is loading (may take a minute) ...")),
     conditionalPanel("output.datloaded",
@@ -106,8 +93,6 @@ verbatimTextOutput("loadTimeText"),
 
     plotlyOutput("ma.plotly", height = "500px"),
     plotlyOutput("heatmapPlotly", height = "450px"),
-#div(style="border:2px solid blue", plotlyOutput("ma.plotly", height = "500px")),
-#div(style="border:2px solid blue", plotlyOutput("heatmapPlotly", height = "450px")),
     downloadButton("download.table", "Download table"),  br(), br(),
     DT::dataTableOutput("table", width = "90%")
   )
@@ -116,27 +101,6 @@ verbatimTextOutput("loadTimeText"),
 
 
 server <- function(input, output, session){
-
-begintime <- Sys.time()
-output$beginTimeText <- renderText({ paste0(begintime) })
-output$eonTimeText <- renderText({ paste0(eontime) })
-
-loginfo("XXX server eontime")
-loginfo(eontime)
-loginfo("XXX server, begintime")
-loginfo(begintime)
-
-
-#http://deanattali.com/blog/advanced-shiny-tips/#shinyjs
-
-session$onSessionEnded(stopApp)
-
-printLogJs <- function(x, ...) { 
-                               logjs(x) 
-                               T
-                               }
-addHandler(printLogJs)
-
 pdf(NULL)
 
 ## process args that were passed in via url
@@ -150,7 +114,6 @@ pdf(NULL)
 
 ## load the data and setup serverCFG
 datasetInput <- reactive({
-loginfo("XXX datasetInput -starttime")
     query<- parseQueryString(session$clientData$url_search)
 
     serverCFG <- processConfig_f(query)
@@ -159,7 +122,7 @@ loginfo("XXX datasetInput -starttime")
     con <- url(serverCFG$url)
 
     loadtime <- system.time(load(con))
-output$loadTimeText <- renderText({ paste0(loadtime) })
+
     output$datloaded <- reactive (is.numeric(nrow(dat)))
     outputOptions(output, "datloaded", suspendWhenHidden = FALSE)
      
@@ -177,19 +140,16 @@ output$loadTimeText <- renderText({ paste0(loadtime) })
 
     rownames(dat) <- dat[, "probeset"]
     dlist <- list( dd=dat, ss=serverCFG )
-loginfo("  EEE datasetInput")
     dlist
 })
 
 ###  force the ball to roll
 observe({
-loginfo("XXX get the real start...")
     dlist <- isolate(datasetInput())
 })
 
 
 createTop <- reactive({
-loginfo("XXX createTop")
     dlist <- isolate(datasetInput())
     dat <- dlist$dd
     serverCFG <- dlist$ss
@@ -227,7 +187,6 @@ loginfo("XXX createTop")
     }
 
     tlist = makeTop_f(dat,serverCFG,design)
-loginfo("   EEE createTop")
     return(tlist)
 })
 
@@ -241,7 +200,6 @@ createDesignControl <- reactive({
 
 #http://stackoverflow.com/questions/31920286/effectively-debugging-shiny-apps
 output$table <- DT::renderDataTable({
-loginfo("XXX table")
     tlist <- createTop()
     top <- tlist$tt
     dat.top <- tlist$dd
@@ -261,7 +219,6 @@ loginfo("XXX table")
 #### HERE is when the data is now already semi-processed 
 ####
 output$ma.plotly <- renderPlotly({
-loginfo("XXX ma.plotly")
     dlist <- isolate(datasetInput())
     dat <- dlist$dd
     serverCFG <- dlist$ss
@@ -292,7 +249,6 @@ loginfo("XXX ma.plotly")
 
 
 output$heatmapPlotly <- renderPlotly({
-loginfo("XXX heatmap")
     dlist <- isolate(datasetInput())
     serverCFG <- dlist$ss
     tlist <- createTop()

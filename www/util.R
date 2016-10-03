@@ -79,7 +79,6 @@ generateHeatmapjson_f <- function(topsymbol,dat.heat) {
 
 
 processConfig_f <- function(query) {
-loginfo("start of processConfig")
 
 ## set default, inverted is initalized to false
   serverCFG <- list( sel=c("E10.5_Mnd_D","E10.5_Mnd_P"),
@@ -168,13 +167,11 @@ loginfo("start of processConfig")
       serverCFG$one <- ifelse(invert, paste0("E", age.2), paste0("E", age.1))
       serverCFG$two <- ifelse(invert, paste0("E", age.1), paste0("E", age.2))
     }
-loginfo("end of processConfig")
     return(serverCFG)
 }
 
 processDatSel_f <- function(serverCFG, dat) {
 
-loginfo("in processDatSel_f.")
 ## get preset 
   invert <- ifelse(serverCFG$inverted == "inverted", T, F)
   ones <- serverCFG$ones
@@ -212,12 +209,10 @@ loginfo("in processDatSel_f.")
     rownames(dat.multiple) <- dat.multiple$P
     dat.sel <- rbind(dat.single, dat.multiple)
     dat.sel <- dat.sel[, colnames(dat.sel)[!colnames(dat.sel) %in% c("MM", "P")]]}
-loginfo("end in processDatSel_f.")
-     return(dat.sel)
+    return(dat.sel)
 }
 
 makeTop_f <- function(dat,serverCFG,design) {
-loginfo("start of makeTop_f call")
 
 ## get preset 
     invert <- ifelse(serverCFG$inverted == "inverted", T, F)
@@ -289,12 +284,10 @@ loginfo("start of makeTop_f call")
     dat.top <- dat.sel[rownames(dat.sel) %in% top$Probeset, ]
 
     tlist <- list(tt=top, dd=dat.top, ss=dat.sel)
-loginfo("end of makeTop_f call")
     return(tlist)
 }
 
 makeDesignControl_f <- function(dat, serverCFG) {
-loginfo("start of makeDEsignControl")
 
     ones <- serverCFG$ones
     twos <- serverCFG$twos
@@ -321,12 +314,10 @@ loginfo("start of makeDEsignControl")
     names(control) <- control.cols
     plist <- list(dd=design, cc=control)
 
-loginfo(" end of makeDesignControl_f")
     return(plist)
 }
 
 makeHeat_f <- function(dat.top, serverCFG, control ) {
-loginfo("start of makeHeat_f call")
 
   sels <- serverCFG$sels
   heatadjust <- serverCFG$heatadjust
@@ -343,7 +334,6 @@ loginfo("start of makeHeat_f call")
   if (heatscale %in% c("MC", "Z")) dat.heat <- sweep(dat.heat, 1, rowMeans(dat.heat))
   if (heatscale == "Z") dat.heat <- sweep(dat.heat, 1, apply(dat.heat, 1, sd), "/")
 
-loginfo("end of makeHeat_f call")
   return(list(hh=dat.heat))
 }
 
