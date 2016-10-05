@@ -1,0 +1,12 @@
+
+To preprocess a directory full of cel files
+
+  Rscript processIt.R cel_dirname mapping.csv dat_filename
+
+Content of mapping csv file is like this,
+cel_filename,user_samplename,viewer_samplename
+"AH065-Mouse430_2-01-1_E12.5_1D_Mx_.CEL","E12.5_MaxD1","12.5MaxD1"
+"AH066-Mouse430_2-01-1_E12.5_2D_Mx_.CEL","E12.5_MaxD2","12.5MaxD2"
+"AH067-Mouse430_2-01-1_E12.5_3D_Mx_.CEL","E12.5_MaxD3","12.5MaxD3"
+
+
