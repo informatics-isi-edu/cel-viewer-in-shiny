@@ -15,10 +15,25 @@ library(shiny)
 options(shiny.error = function() { 
     logging::logerror(sys.calls() %>% as.character %>% paste(collapse = ", ")) })
 
+mycss <- "
+#spinner-container {
+  position: relative;
+}
+#loading-spinner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  margin-top: -33px;  /* half of the spinner's height */
+  margin-left: -33px; /* half of the spinner's width */
+}
+"
+
 ### https://datatables.net/manual/tech-notes/7
 ### $.fn.dataTable.ext.errMode = 'throw';
 
 ui <- fluidPage( 
+tags$style(HTML(mycss)),
 titlePanel("Gene Expression Comparison Shiny App"),
 sidebarLayout(
   div(class = "col-sm-4",
@@ -29,8 +44,10 @@ sidebarLayout(
     verbatimTextOutput("selText"),
     h5("Comparison"),
     verbatimTextOutput("compText"),
-    conditionalPanel("!output.datloaded",
-        helpText("Data is loading (may take a minute) ...")),
+    conditionalPanel( condition="$('html').hasClass('shiny-busy') && !output.datloaded",
+        helpText("Shiny is initializing ...")),
+    conditionalPanel( condition="!$('html').hasClass('shiny-busy') && !output.datloaded",
+        helpText("Data is loading ...")),
     conditionalPanel("output.datloaded",
         helpText("Data is loaded."))
   ),
@@ -90,7 +107,10 @@ sidebarLayout(
                                            selected = "Z", inline = T)
   ))),
   mainPanel(width = 8,
-
+    conditionalPanel("$('html').hasClass('shiny-busy')",
+      div(style="height:500px", id = "spinner-container",
+          tags$img(src = "35.gif", id = "loading-spinner"))
+    ),
     plotlyOutput("ma.plotly", height = "500px"),
     plotlyOutput("heatmapPlotly", height = "450px"),
     downloadButton("download.table", "Download table"),  br(), br(),
@@ -101,6 +121,7 @@ sidebarLayout(
 
 
 server <- function(input, output, session){
+
 pdf(NULL)
 
 ## process args that were passed in via url

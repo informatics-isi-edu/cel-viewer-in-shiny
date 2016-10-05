@@ -24,8 +24,23 @@ options(shiny.error = function() {
 
 eontime <-Sys.time()
 
+mycss <- "
+#spinner-container {
+  position: relative;
+}
+#loading-spinner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  margin-top: -33px;  /* half of the spinner's height */
+  margin-left: -33px; /* half of the spinner's width */
+}
+"
+
 ui <- fluidPage( 
 useShinyjs(),
+tags$style(HTML(mycss)),
 titlePanel("Gene Expression Comparison Shiny App"),
 sidebarLayout(
   div(class = "col-sm-4",
@@ -42,8 +57,10 @@ h5("beginTime"),
 verbatimTextOutput("beginTimeText"),
 h5("LoadTime"),
 verbatimTextOutput("loadTimeText"),
-    conditionalPanel("!output.datloaded",
-        helpText("Data is loading (may take a minute) ...")),
+    conditionalPanel( condition="$('html').hasClass('shiny-busy') && !output.datloaded",
+        helpText("Shiny is initializing ...")),
+    conditionalPanel( condition="!$('html').hasClass('shiny-busy') && !output.datloaded",
+        helpText("Data is loading ...")),
     conditionalPanel("output.datloaded",
         helpText("Data is loaded."))
   ),
@@ -105,6 +122,11 @@ verbatimTextOutput("loadTimeText"),
   ))),
   mainPanel(width = 8,
 
+  conditionalPanel("$('html').hasClass('shiny-busy')",
+      div(style="height:500px; border:2px solid green", id = "spinner-container",
+          tags$img(src = "35.gif", id = "loading-spinner"))
+  ),
+
 div(style="border:2px solid blue", plotlyOutput("ma.plotly", height = "500px")),
 div(style="border:2px solid blue", plotlyOutput("heatmapPlotly", height = "450px")),
 
@@ -150,6 +172,7 @@ pdf(NULL)
 
 ## load the data and setup serverCFG
 datasetInput <- reactive({
+
 loginfo("XXX datasetInput -starttime")
     query<- parseQueryString(session$clientData$url_search)
 
