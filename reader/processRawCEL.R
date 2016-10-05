@@ -1,7 +1,7 @@
 ##
-##  Rscript processIt.R path-to-cel-files path-to-mapping-file dat-file-name-to-use
+##  Rscript processRawCEL.R path-to-cel-files path-to-mapping-file dat-file-name-to-use
 ##
-##   (Rscript processIt.R usc usc_mapping.csv usc_dat.R)
+##   (Rscript processRawCEL.R usc usc_mapping.csv usc_dat.R)
 ##  
 ## will generate full_dat.R, full_dat.rds
 ## dat is the name of the data structure

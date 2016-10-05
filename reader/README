@@ -1,7 +1,7 @@
 
 To preprocess a directory full of cel files
 
-  Rscript processIt.R cel_dirname mapping.csv dat_filename
+  Rscript processRawCEL.R cel_dirname mapping.csv dat_filename
 
 Content of mapping csv file is like this,
 cel_filename,user_samplename,viewer_samplename
